@@ -4,7 +4,7 @@
   <groupId>uq</groupId>
   <artifactId>spark-app</artifactId>
   <packaging>jar</packaging>
-  <version>8.0</version>
+  <version>4.3</version>
   <name>spark-app</name>
   <url>http://maven.apache.org</url>
 

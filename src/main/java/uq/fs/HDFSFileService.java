@@ -202,6 +202,38 @@ public class HDFSFileService implements SparkEnvInterface, Serializable, IndexPa
 	}
 	
 	/**
+	 * Save this String buffer to a file in the HDFS folder.
+	 * If the file already exists, then save as 
+	 * 'fileName-1', 'fileName-2', and so on.
+	 * 
+	 * @param scriptBuffer The buffer with the content of the file.
+	 * @param fileName Name of the file, with its extension.
+	 */
+	public void saveStringBufferHDFS(StringBuffer scriptBuffer, String fileName) {
+		String name = fileName;
+		try {
+			FileSystem fs = FileSystem.get(new URI(HDFS_PATH), config);
+			Path file = new Path(HDFS_PATH + HDFS_OUTPUT + name);
+			
+			int i = 1;
+			while(fs.isFile(file)){
+				name = fileName + "-" + i++;
+				file = new Path(HDFS_PATH + HDFS_OUTPUT + name);
+			}
+			
+			BufferedWriter writer =
+					new BufferedWriter(new OutputStreamWriter(fs.create(file,true)));
+			writer.write(scriptBuffer.toString());
+			writer.close();
+			fs.close();
+			System.out.println("File '" + HDFS_OUTPUT + name + "' successfully saved to HDFS."); 
+	    } catch(Exception e){
+	    	System.out.println("ERROR when writing '" + name + "' to HDFS.");
+	        e.printStackTrace();
+	    }
+	}
+	
+	/**
 	 * Save the application log file to the HDFS folder.
 	 * If the file already exists, then save as 
 	 * 'AppName-log-1', 'AppName-log-2', and so on.

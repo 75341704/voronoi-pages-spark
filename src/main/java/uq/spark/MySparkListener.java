@@ -46,7 +46,8 @@ public class MySparkListener implements SparkListener {
 	private long timeEnd;
 	private long stageSum=0;
 	private long jobSum=0;
-	private long[] jobIniVec = new long[25000];
+/*	private long[] jobIniVec = new long[50000];
+*/	private long jobIni = 0;
 	
 	public void onApplicationStart(SparkListenerApplicationStart arg0) {
 		appName = arg0.appName();
@@ -83,17 +84,17 @@ public class MySparkListener implements SparkListener {
 	
 	public void onJobStart(SparkListenerJobStart arg0) {
 		int jobId = arg0.jobId();
-		long jobIni = arg0.time();
+		jobIni = arg0.time();
 		log.add("Job (" + jobId + ") started at: " + jobIni + " ms.\n");
-		jobIniVec[jobId] = jobIni;
+		//jobIniVec[jobId] = jobIni;
 	}
 	
 	public void onJobEnd(SparkListenerJobEnd arg0) {
 		int jobId = arg0.jobId();
 		long jobEnd = arg0.time();
 		log.add("Job (" + jobId + ") completed at: " + jobEnd + " ms.");	
-		log.add("Job (" + jobId + ") total time: " + (jobEnd - jobIniVec[jobId]) + " ms.\n");
-		jobSum += (jobEnd - jobIniVec[jobId]);
+		log.add("Job (" + jobId + ") total time: " + (jobEnd - jobIni/*jobIniVec[jobId]*/) + " ms.\n");
+		jobSum += (jobEnd - jobIni);
 	}	
 	
 	public void onStageSubmitted(SparkListenerStageSubmitted arg0) {

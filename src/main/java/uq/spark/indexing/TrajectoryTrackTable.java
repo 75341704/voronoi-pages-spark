@@ -4,10 +4,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
@@ -311,40 +309,32 @@ public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
 	 * Save to HDFS output folder as "trajectory-track-table-info"
 	 */
 	public void saveTableInfo(){
-		List<String> info = new LinkedList<String>();
-		String script = "Number of Trajectories (Tuples): " + 
-				count();
-		info.add(script.toString());
+		StringBuffer scriptBuffer = new StringBuffer();
 		
-		script = "Number of RDD Partitions: " + 
-				getNumPartitions();
-		info.add(script.toString());
-		
-		script = "Avg. Number of Pages per Trajectory: " + 
-				avgPagesPerTrajectory() + "\n";
-		info.add(script.toString());
-		
+		scriptBuffer.append("Number of Trajectories (Tuples): " + this.count() + "\n");
+		scriptBuffer.append("Avg. Number of Pages per Trajectory: " + this.avgPagesPerTrajectory() + "\n\n");
+
 		// map each tuple (TrajectoryID, Pages Count) to a info string 
-		List<String> zeroValue = new LinkedList<String>();
-		Function2<List<String>, Tuple2<String, Integer>, List<String>> seqOp = 
-				new Function2<List<String>, Tuple2<String,Integer>, List<String>>() {
-			public List<String> call(List<String> infoList, Tuple2<String, Integer> count) throws Exception {
-				infoList.add(count._1 + ": " + count._2 + " pages.");
-				return infoList;
+		StringBuffer emptyBuffer = new StringBuffer();
+		Function2<StringBuffer, Tuple2<String, HashSet<PageIndex>>, StringBuffer> seqOp = 
+				new Function2<StringBuffer, Tuple2<String,HashSet<PageIndex>>, StringBuffer>() {
+			public StringBuffer call(StringBuffer buffer, Tuple2<String, HashSet<PageIndex>> tuple) throws Exception {
+				buffer.append(tuple._1 + ": " + tuple._2.size() + " pages.\n");
+				return buffer;
 			}
 		}; 
-		Function2<List<String>, List<String>, List<String>> combOp = 
-				new Function2<List<String>, List<String>, List<String>>() {
-			public List<String> call(List<String> list1, List<String> list2) throws Exception {
-				list1.addAll(list2);
-				return list1;
+		Function2<StringBuffer, StringBuffer, StringBuffer> combOp = 
+				new Function2<StringBuffer, StringBuffer, StringBuffer>() {
+			public StringBuffer call(StringBuffer b1, StringBuffer b2) throws Exception {
+				b1.append(b2);
+				return b1;
 			}
 		};
-		info.addAll(countByTrajectoryId().aggregate(zeroValue, seqOp, combOp));
+		scriptBuffer.append(trackTableRDD.aggregate(emptyBuffer, seqOp, combOp));
 
 		// save to hdfs
 		HDFSFileService hdfs = new HDFSFileService();
-		hdfs.saveStringListHDFS(info, "trajectory-track-table-info");
+		hdfs.saveStringBufferHDFS(scriptBuffer, "trajectory-track-table-info");
 	}
 	
 	/**

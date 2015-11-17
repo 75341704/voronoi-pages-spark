@@ -26,7 +26,7 @@ public interface SparkEnvInterface {
 	
 	// path to the data set folders/files 
 	static final String DATA_PATH =
-			//HDFS_PATH + "/spark-data/trajectory-data/sample-1gb";
+			HDFS_PATH + "/spark-data/trajectory-data/sample-8gb";
 			/*
 			LOCAL_PATH + "/trajectory-data/split1," + 
 			LOCAL_PATH + "/trajectory-data/split2," +
@@ -37,18 +37,18 @@ public interface SparkEnvInterface {
 			LOCAL_PATH + "/trajectory-data/split7," +
 			LOCAL_PATH + "/trajectory-data/split8";
 			 */
-			HDFS_PATH + "/spark-data/trajectory-data/split1," + 
+/*			HDFS_PATH + "/spark-data/trajectory-data/split1," + 
 			HDFS_PATH + "/spark-data/trajectory-data/split2," +
 			HDFS_PATH + "/spark-data/trajectory-data/split3," +
 			HDFS_PATH + "/spark-data/trajectory-data/split4," +
-			HDFS_PATH + "/spark-data/trajectory-data/split5," +
-			HDFS_PATH + "/spark-data/trajectory-data/split6," +
-			HDFS_PATH + "/spark-data/trajectory-data/split7," +
-			HDFS_PATH + "/spark-data/trajectory-data/split8";
+		//	HDFS_PATH + "/spark-data/trajectory-data/split5," +
+		//	HDFS_PATH + "/spark-data/trajectory-data/split6," +
+		//	HDFS_PATH + "/spark-data/trajectory-data/split7," +
+			HDFS_PATH + "/spark-data/trajectory-data/split8"; */
 
 	// path to pivots file inside HDFS
 	static final String PIVOTS_PATH = 
-			"/spark-data/pivots/mercator/128g-pivots-kmeans-approx-2000.txt";
+			"/spark-data/pivots/mercator/128g-pivots-random-500.txt";
 	
 	// path to output folder inside HDFS
 	static final String HDFS_OUTPUT = 
