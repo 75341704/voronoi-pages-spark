@@ -16,10 +16,9 @@ import uq.spark.indexing.TrajectoryCollector;
 import uq.spark.indexing.TrajectoryTrackTable;
 import uq.spark.indexing.VoronoiDiagram;
 import uq.spark.indexing.VoronoiPagesRDD;
-import uq.spatial.Point;
+import uq.spatial.Box;
 import uq.spatial.Trajectory;
 import uq.spatial.distance.DistanceService;
-import uq.spatial.voronoi.VoronoiPolygon;
 
 /**
  * Implement Most Similar Trajectory (nearest neighbor) 
@@ -88,10 +87,10 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 		 *******************/
 		// retrieve candidate polygons IDs = VSIs
 		// check for polygons that overlaps with Q
-		/*Box mbr = q.mbr();
+		Box mbr = q.mbr();
 		List<Integer> candidatePolygons = 
-				diagram.getOverlapingPolygons(mbr);*/
-		HashSet<Integer> candidatePolygons = getOverlappingPolygons(q);
+				diagram.getOverlapingPolygons(mbr);
+		//HashSet<Integer> candidatePolygons = getOverlappingPolygons(q);
 
 		// for every polygon that overlap with the MBR of Q, 
 		// also add their neighbors to the candidates lists
@@ -130,11 +129,6 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 		 * Find the next (k-1)-NN iteratively
 		 *******************/
 		for(int i=0; i<k-1; i++){
-			// gambiarra (neighbors of the neighbors)
-			/*while(i > nnCandidateList.size()){
-			//TODO				
-			}*/
-			
 			// get the previous NN
 			NearNeighbor nn_i = nnCandidateList.get(i);
 
@@ -198,10 +192,10 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 
 		// retrieve candidate polygons IDs = VSIs
 		// check for polygons that overlaps with Q
-		/*Box mbr = q.mbr();
+		Box mbr = q.mbr();
 		List<Integer> candidatePolygons = 
-				diagram.getOverlapingPolygons(mbr);*/
-		HashSet<Integer> candidatePolygons = getOverlappingPolygons(q);
+				diagram.getOverlapingPolygons(mbr);
+		//HashSet<Integer> candidatePolygons = getOverlappingPolygons(q);
 		
 		// for every polygon that overlap with the MBR of Q, 
 		// also add their neighbors to the candidates lists
@@ -299,7 +293,7 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 	 * 
 	 * @return A set of polygons ID
 	 */
-	private HashSet<Integer> getOverlappingPolygons(Trajectory q) {
+	/*private HashSet<Integer> getOverlappingPolygons(Trajectory q) {
 		HashSet<Integer> polySet = new HashSet<Integer>();
 		for(Point p : q.getPointsList()){
 			for(VoronoiPolygon vp : diagram.getPolygonList()){
@@ -310,5 +304,5 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 			}
 		}
 		return polySet;
-	}
+	}*/
 }

@@ -14,6 +14,7 @@ import java.util.List;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.api.java.JavaRDD;
 
 import uq.spark.SparkEnvInterface;
 import uq.spark.indexing.IndexParamInterface;
@@ -297,5 +298,32 @@ public class HDFSFileService implements SparkEnvInterface, Serializable, IndexPa
 	    	System.out.println("ERROR when writing '" + name + "' to HDFS.");
 	        e.printStackTrace();
 	    }
+	}
+
+	/**
+	 * Save this RDD to the HDFS output folder.
+	 * 
+	 * @param infoRDD The RDD with the file content.
+	 * @param fileName The file name.
+	 */
+	public void saveRDDToHDFS(JavaRDD<String> infoRDD, String fileName) {
+		String name = fileName;
+		try {
+			FileSystem fs = FileSystem.get(new URI(HDFS_PATH), config);
+			Path file = new Path(HDFS_PATH + HDFS_OUTPUT + name);
+			
+			int i = 1;
+			while(fs.isFile(file)){
+				name = fileName + "-" + i++;
+				file = new Path(HDFS_PATH + HDFS_OUTPUT + name);
+			}
+			
+			// save the RDD
+			infoRDD.saveAsTextFile(HDFS_PATH + HDFS_OUTPUT + name);
+		}catch(Exception e){
+	    	System.out.println("ERROR when writing '" + name + "' to HDFS.");
+	        e.printStackTrace();
+	    }
+		
 	}
 }

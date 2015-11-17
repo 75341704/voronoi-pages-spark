@@ -3,6 +3,8 @@ package uq.spark;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.storage.StorageLevel;
 
+import uq.spark.indexing.IndexParamInterface;
+
 /**
  * Environment interface.
  * Setup Spark, HDFS, MapReduce and cluster access variables.
@@ -10,7 +12,7 @@ import org.apache.spark.storage.StorageLevel;
  * @author uqdalves
  *
  */
-public interface SparkEnvInterface {
+public interface SparkEnvInterface extends IndexParamInterface {
 	// Spark context
 	static final JavaSparkContext SC = 
 			MySparkContext.getInstance();
@@ -27,16 +29,16 @@ public interface SparkEnvInterface {
 	// path to the data set folders/files 
 	static final String DATA_PATH =
 			HDFS_PATH + "/spark-data/trajectory-data/sample-8gb";
-			/*
+	/*
 			LOCAL_PATH + "/trajectory-data/split1," + 
-			LOCAL_PATH + "/trajectory-data/split2," +
+		//	LOCAL_PATH + "/trajectory-data/split2," +
 			LOCAL_PATH + "/trajectory-data/split3," +
-			LOCAL_PATH + "/trajectory-data/split4," +
+		//	LOCAL_PATH + "/trajectory-data/split4," +
 			LOCAL_PATH + "/trajectory-data/split5," +
-			LOCAL_PATH + "/trajectory-data/split6," +
-			LOCAL_PATH + "/trajectory-data/split7," +
+		//	LOCAL_PATH + "/trajectory-data/split6," +
+		//	LOCAL_PATH + "/trajectory-data/split7," +
 			LOCAL_PATH + "/trajectory-data/split8";
-			 */
+ */
 /*			HDFS_PATH + "/spark-data/trajectory-data/split1," + 
 			HDFS_PATH + "/spark-data/trajectory-data/split2," +
 			HDFS_PATH + "/spark-data/trajectory-data/split3," +
@@ -48,7 +50,7 @@ public interface SparkEnvInterface {
 
 	// path to pivots file inside HDFS
 	static final String PIVOTS_PATH = 
-			"/spark-data/pivots/mercator/128g-pivots-random-500.txt";
+			"/spark-data/pivots/mercator/128g-pivots-random-" + K + ".txt";
 	
 	// path to output folder inside HDFS
 	static final String HDFS_OUTPUT = 
@@ -64,30 +66,26 @@ public interface SparkEnvInterface {
 			"/home/uqdalves/hadoop/hadoop-2.7.1";  // Local
 	
 	// the min number of partitions of the input
-	static final int MIN_PARTITIONS = 2000; // 2000 120
+	static final int NUM_PARTITIONS_DATA = 125; // number of data blocks
 		
 	// number of reduce tasks for the indexing process
-	static final int NUM_TASKS_INDEX = 1000; // 1000 120
+	static final int NUM_PARTITIONS_PAGES = 4 * NUM_PARTITIONS_DATA;
 	
-	// number of reduce tasks for the query processing
-	static final int NUM_TASKS_QUERY = 1000;  // 1000 120
-	
+	// number of reduce tasks for the indexing process
+	static final int NUM_PARTITIONS_TTT = 2 * NUM_PARTITIONS_DATA;
+		
 	// Spark storage level for the partitioning process
 	static final StorageLevel STORAGE_LEVEL_PARTITIONIG = 
-			StorageLevel.MEMORY_ONLY();
-	
-	// Spark storage level for the query process
-	static final StorageLevel STORAGE_LEVEL_QUERY = 
-			StorageLevel.MEMORY_ONLY();
+			StorageLevel.MEMORY_ONLY_SER();
 	
 	// Spark storage level of the Pages RDD
 	static final StorageLevel STORAGE_LEVEL_PAGES = 
-			StorageLevel.MEMORY_ONLY();
+			StorageLevel.MEMORY_ONLY_SER();
 	
 	// Spark storage level of the Trajectory Track Table
 	static final StorageLevel STORAGE_LEVEL_TTT = 
-			StorageLevel.MEMORY_ONLY();
-	
+			StorageLevel.MEMORY_ONLY_SER();
+
 	// an infinity value
 	static final double INF = Double.MAX_VALUE;
 }

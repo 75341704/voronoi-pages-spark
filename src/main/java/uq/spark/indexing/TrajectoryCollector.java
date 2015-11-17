@@ -106,7 +106,7 @@ public class TrajectoryCollector implements Serializable{
 
 		// map each page to a list key value pairs containing 
 		// the desired trajectories
-		//final int NUM_REDUCE_TASKS = trajectoryIdSet.size();
+		// final int NUM_REDUCE_TASKS = trajectoryIdSet.size();
 		JavaRDD<Trajectory> trajectoryRDD =
 			filteredPagesRDD.flatMapToPair(new PairFlatMapFunction<Tuple2<PageIndex,Page>, String, Trajectory>() {
 				public Iterable<Tuple2<String, Trajectory>> call(Tuple2<PageIndex, Page> page) throws Exception {

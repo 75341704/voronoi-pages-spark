@@ -116,7 +116,7 @@ public class PivotService implements Serializable, SparkEnvInterface, IndexParam
 		System.out.println("Running Pivot Service..\n");
 
     	// read trajectory data files
-     	JavaRDD<String> fileRDD = SC.textFile(DATA_PATH, MIN_PARTITIONS);
+     	JavaRDD<String> fileRDD = SC.textFile(DATA_PATH, NUM_PARTITIONS_DATA);
 
      	// convert the input dataset to point objects
      	FileToObjectRDDService rddService = new FileToObjectRDDService();

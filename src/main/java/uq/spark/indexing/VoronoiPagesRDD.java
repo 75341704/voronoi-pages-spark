@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
@@ -64,7 +65,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 					return s1.merge(s2);
 				}
 				// repartition after the reduce (group and sort pages by index)
-			}).repartitionAndSortWithinPartitions(partitionerByVoronoioIndex());
+			}, NUM_PARTITIONS_PAGES);//.repartitionAndSortWithinPartitions(partitionerByVoronoioIndex());
 
 		return voronoiPagesRDD;
 	}
@@ -77,6 +78,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
      * are partitioned by key. Maps each key to a partition ID, 
      * from 0 to numPartitions - 1.
 	 */
+	@SuppressWarnings("unused")
 	private Partitioner partitionerByVoronoioIndex(){
 		// creates a new partitioner by pages index
 		Partitioner partitioner = new Partitioner() {
@@ -147,7 +149,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 		});
 
 		// return partition with the results
-		return pagesRDD;//.coalesce(1);
+		return pagesRDD;//.coalesce(NUM_COALESCE);
 	}
 	
 	/**
@@ -169,7 +171,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 		});
 
 		// return partition with the results
-		return pagesRDD;//.coalesce(1);
+		return pagesRDD;//.coalesce(NUM_COALESCE);
 	}
 	
 	/**
@@ -194,7 +196,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 		});
 
 		// return partition with the results
-		return pagesRDD;//.coalesce(1);
+		return pagesRDD;//.coalesce(NUM_COALESCE);
 	}
 	
 	/**
@@ -214,7 +216,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 		});
 
 		// return partitions with the result
-		return pagesRDD;//.coalesce(1);
+		return pagesRDD;//.coalesce(NUM_COALESCE);
 	}
 
 	/**
@@ -234,7 +236,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 		});
 
 		// return partitions with the result
-		return pagesRDD;//.coalesce(1);
+		return pagesRDD;//.coalesce(NUM_COALESCE);
 	}
 	
 	/**
@@ -256,7 +258,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 		});
 		
 		// return partitions with the result
-		return pagesRDD; //.coalesce(1);
+		return pagesRDD;//.coalesce(NUM_COALESCE);
 	}
 	
 	/**
@@ -286,7 +288,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 	public double avgSubTrajectoriesPerPage(){
 		double total = getNumSubTrajectories();
 		double numPages = count();
-		return (total/numPages);
+		return (total / numPages);
 	}
 
 	/**
@@ -296,7 +298,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 	public double avgPointsPerPage(){
 		double total = getNumPoints();
 		double numPages = count();
-		return (total/numPages);
+		return (total / numPages);
 	}
 	
 	/**
@@ -372,49 +374,38 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 		
 		String script = "Number of Voronoi Pages: " + 
 				count();
-		info.add(script.toString());
+		info.add(script);
 		
 		script = "Number of RDD Partitions: " + 
 				getNumPartitions();
-		info.add(script.toString());
+		info.add(script);
 		
 		script = "Total Number of Sub-Trajectories: " + 
 				getNumSubTrajectories();
-		info.add(script.toString());
+		info.add(script);
 		
 		script = "Total Number of Points: " + 
 				getNumPoints();
-		info.add(script.toString());
+		info.add(script);
 		
 		script = "Avg. Number of Sub-Trajectories per Page: " + 
 				avgSubTrajectoriesPerPage();
-		info.add(script.toString());
+		info.add(script);
 		
 		script = "Avg. Number of Points per Page: " + 
 				avgPointsPerPage() + "\n";
-		info.add(script.toString());
+		info.add(script);
 		
-		// map each page to a String info
-		List<String> zeroValue = new LinkedList<String>();
-		Function2<List<String>, Tuple2<PageIndex, Page>, List<String>> seqOp = 
-				new Function2<List<String>, Tuple2<PageIndex,Page>, List<String>>() {
-			public List<String> call(List<String> infoList, Tuple2<PageIndex, Page> page) throws Exception {
-				String script = "";
-				script += page._1.toString() + "\n";
-				script += page._2.getTrajectoryList().size() + " sub-trajectories.\n";
-				script += page._2.getPointsList().size() + " points.\n";		
-				infoList.add(script);
-				return infoList;
-			}
-		};
-		Function2<List<String>, List<String>, List<String>> combOp =
-				new Function2<List<String>, List<String>, List<String>>() {
-			public List<String> call(List<String> list1, List<String> list2) throws Exception {
-				list1.addAll(list2);
-				return list1;
-			}
-		};
-		info.addAll(voronoiPagesRDD.aggregate(zeroValue, seqOp, combOp));
+		info.addAll( 
+			voronoiPagesRDD.map(new Function<Tuple2<PageIndex,Page>, String>() {
+				public String call(Tuple2<PageIndex, Page> page) throws Exception {
+					String script = "";
+					script += page._1.toString() + "\n";
+					script += page._2.getTrajectoryList().size() + " sub-trajectories.\n";
+					script += page._2.getPointsList().size() + " points.\n";		
+					return script;
+				}
+			}).collect());
 
 		// save to hdfs
 		HDFSFileService hdfs = new HDFSFileService();
@@ -431,33 +422,20 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 	 * Save to HDFS output folder as "pages_history"
 	 */
 	public void savePagesHistory(){
-		List<String> history = new LinkedList<String>();
-		
-		// map each page to a String info
-		List<String> zeroValue = new LinkedList<String>();
-		Function2<List<String>, Tuple2<PageIndex, Page>, List<String>> seqOp = 
-				new Function2<List<String>, Tuple2<PageIndex,Page>, List<String>>() {
-			public List<String> call(List<String> histList, Tuple2<PageIndex, Page> page) throws Exception {
-				String script = "";
-				script += page._1.toString() + " ";
-				script += page._2.getTrajectoryList().size() + " ";
-				script += page._2.getPointsList().size();	
-				histList.add(script);
-				return histList;
-			}
-		};
-		Function2<List<String>, List<String>, List<String>> combOp =
-				new Function2<List<String>, List<String>, List<String>>() {
-			public List<String> call(List<String> list1, List<String> list2) throws Exception {
-				list1.addAll(list2);
-				return list1;
-			}
-		};
-		history.addAll(voronoiPagesRDD.aggregate(zeroValue, seqOp, combOp));
+		JavaRDD<String> historyRDD = 
+			voronoiPagesRDD.map(new Function<Tuple2<PageIndex,Page>, String>() {
+				public String call(Tuple2<PageIndex, Page> page) throws Exception {
+					String script = "";
+					script += page._1.toString() + " ";
+					script += page._2.getTrajectoryList().size() + " ";
+					script += page._2.getPointsList().size();	
+					return script;
+				}
+			});
 
 		// save to hdfs
 		HDFSFileService hdfs = new HDFSFileService();
-		hdfs.saveStringListHDFS(history, "pages-rdd-history");
+		hdfs.saveRDDToHDFS(historyRDD, "pages-rdd-history");
 	}
 	
 	/**

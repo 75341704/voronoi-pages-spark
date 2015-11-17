@@ -76,7 +76,6 @@ public class SelectionQuery implements Serializable, SparkEnvInterface, IndexPar
 		JavaPairRDD<PageIndex, Page> filteredPagesRDD = 
 				pagesRDD.filterPagesByIndex(indexList);
 		
-
 		/*******************
 		 *  REFINEMENT STEP:
 		 *******************/
@@ -109,7 +108,7 @@ public class SelectionQuery implements Serializable, SparkEnvInterface, IndexPar
 				obj1.group(obj2);
 				return obj1;
 			}
-		}, NUM_TASKS_QUERY).values().collect();
+		}/*, NUM_TASKS_QUERY*/).values().collect();
 
 		return selectObjectList;
 	}
@@ -168,7 +167,7 @@ public class SelectionQuery implements Serializable, SparkEnvInterface, IndexPar
 				obj1.group(obj2);
 				return obj1;
 			}
-		}, NUM_TASKS_QUERY).values().collect();
+		}/*, NUM_TASKS_QUERY*/).values().collect();
 
 		return selectObjectList;
 	}
@@ -227,7 +226,7 @@ public class SelectionQuery implements Serializable, SparkEnvInterface, IndexPar
 				obj1.group(obj2);
 				return obj1;
 			}
-		}, NUM_TASKS_QUERY).values().collect();
+		}/*, NUM_TASKS_QUERY*/).values().collect();
 
 		return selectObjectList;
 	}

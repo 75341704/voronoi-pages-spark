@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
@@ -74,7 +73,7 @@ public class PartitioningIndexingService implements Serializable, SparkEnvInterf
     	 * READ DATA
     	 */
     	// trajectory data files (from the HDFS folder)
-     	JavaRDD<String> fileRDD = SC.textFile(DATA_PATH, MIN_PARTITIONS);
+     	JavaRDD<String> fileRDD = SC.textFile(DATA_PATH, NUM_PARTITIONS_DATA);
      	fileRDD.persist(STORAGE_LEVEL_PARTITIONIG);
      	
      	/**
@@ -98,11 +97,7 @@ public class PartitioningIndexingService implements Serializable, SparkEnvInterf
      	// Second map to assign each sub-trajectory to a Voronoi Page
      	JavaPairRDD<PageIndex, Page> trajectoryToPagePairsRDD = 
      			mapTrajectoriesToPages(trajectoryRDD, getVoronoiDiagram().value());
- 
-    	// creates a Partitioner here to defines how the elements in a key-value pair RDD 
-     	// are partitioned by key. Maps each key to a partition ID, from 0 to numPartitions - 1.
-  //   	trajectoryToPagePairsRDD.partitionBy(partitionerByVoronoioIndex());
-     	
+
      	/**
      	 * BUILD VORONOI PAGES RDD (REDUCE)
      	 */
@@ -250,33 +245,5 @@ public class PartitioningIndexingService implements Serializable, SparkEnvInterf
 			});
 			
 		return trajToPagePairsRDD;
-	}
-	
-	/**
-	 * Physical partitioner of a RDD.
-	 * Group partitions with same PageIndex within the RDD.
-	 * </br>
-	 * Defines how the elements in a key-value pair RDD 
-     * are partitioned by key. Maps each key to a partition ID, 
-     * from 0 to numPartitions - 1.
-	 */
-	private Partitioner partitionerByVoronoioIndex(){
-		// creates a new partitioner by pages index
-		Partitioner partitioner = new Partitioner() {
-			
-			@Override
-			public int numPartitions() {
-				return K; // number of voronoi polygons
-			}
-			
-			@Override
-			public int getPartition(Object key) {
-			   PageIndex index = (PageIndex) key;
-			   // key is assumed to go continuously from 0 to elements-1.
-			   return (index.VSI - 1);//hashCode();
-			}
-		};
-		
-		return partitioner;
 	}
 }

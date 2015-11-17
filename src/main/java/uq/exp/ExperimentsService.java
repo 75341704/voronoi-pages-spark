@@ -40,7 +40,7 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 	// experiments log
 	private static List<String> log = new LinkedList<String>();
 	// experiment output file name
-	private static final String FILE_NAME = "experiments-mem-" + K + "-" + TIME_WINDOW_SIZE + "s";
+	private static final String FILE_NAME = "experiments-mem-random-" + K;// + "-" + TIME_WINDOW_SIZE + "s";
 	// time to run queries
 	private static long selecQueryTime=0;
 	private static long nnQueryTime=0;
@@ -73,14 +73,14 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 				partitioningService.getTrajectoryTrackTable();
 
 		// save information regarding indexing
-		voronoiPagesRDD.savePagesInfo();
+/*		voronoiPagesRDD.savePagesInfo();
 		voronoiPagesRDD.savePagesHistory();
 		trajectoryTrackTable.saveTableInfo();
-		
+*/
 		/************************
 		 * QUERIES PROCESING 
 		 ************************/
-/*		QueryProcessingService queryService = new QueryProcessingService(
+		QueryProcessingService queryService = new QueryProcessingService(
 				voronoiPagesRDD, trajectoryTrackTable, voronoiDiagram); 
 		// trajectories returned from the query
 		List<Trajectory> queryResult;
@@ -90,7 +90,7 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 		/******
 		 * USE CASES
 		 ******/
-/*		List<STObject> stUseCases = readSpatialTemporalUseCases();
+		List<STObject> stUseCases = readSpatialTemporalUseCases();
 		List<Trajectory> nnUseCases = readNearestNeighborUseCases();
 		
 		/******
@@ -99,7 +99,9 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 /*		{
 			log.add("Spatial-Temporal Selection Query Result:\n");
 			int i=1;
-			for(STObject stObj : stUseCases){
+			for(int j=0; j<10; j++){//STObject stObj : stUseCases){
+				STObject stObj = stUseCases.get(j);
+				
 				long start = System.currentTimeMillis();
 				// run query
 				queryResult = queryService
@@ -117,11 +119,13 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 		/******
 		 * K-NN QUERIES
 		 ******/
-/*		{
+		{
 			log.add("\nKNN Query Result:\n");
 			int i=1;
 			final int k = 10; 
-			for(Trajectory t : nnUseCases){
+			for(int j=0; j<10; j++){//Trajectory t : nnUseCases){
+				Trajectory t = nnUseCases.get(j);
+				
 				long start = System.currentTimeMillis();				
 				// run query
 				long tIni = t.timeIni();
@@ -135,12 +139,12 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 				nnQueryTime += time;
 				}
 			log.add("\nNN query ends at: " + System.currentTimeMillis() + "ms.");
-			log.add("Total Spatial-Temporal Selection Query Time: " + nnQueryTime + " ms.");
+			log.add("Total K-NN Time: " + nnQueryTime + " ms.");
 		}
 
 		// save the result log to HDFS
 		hdfs.saveStringListHDFS(log, FILE_NAME);
-*/		
+		
 		// unpersist
 		voronoiPagesRDD.unpersist();
 		trajectoryTrackTable.unpersist();

@@ -93,7 +93,7 @@ public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
 		};
 		
 		// aggregates the index sets by trajectory ID
-		return trajectoryToPagePairRDD.aggregateByKey(emptySet, seqFunc, combFunc);
+		return trajectoryToPagePairRDD.aggregateByKey(emptySet, NUM_PARTITIONS_TTT, seqFunc, combFunc);
 	}
 	
 	/**
@@ -309,32 +309,22 @@ public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
 	 * Save to HDFS output folder as "trajectory-track-table-info"
 	 */
 	public void saveTableInfo(){
-		StringBuffer scriptBuffer = new StringBuffer();
+		/*StringBuffer scriptBuffer = new StringBuffer();
 		
 		scriptBuffer.append("Number of Trajectories (Tuples): " + this.count() + "\n");
 		scriptBuffer.append("Avg. Number of Pages per Trajectory: " + this.avgPagesPerTrajectory() + "\n\n");
-
-		// map each tuple (TrajectoryID, Pages Count) to a info string 
-		StringBuffer emptyBuffer = new StringBuffer();
-		Function2<StringBuffer, Tuple2<String, HashSet<PageIndex>>, StringBuffer> seqOp = 
-				new Function2<StringBuffer, Tuple2<String,HashSet<PageIndex>>, StringBuffer>() {
-			public StringBuffer call(StringBuffer buffer, Tuple2<String, HashSet<PageIndex>> tuple) throws Exception {
-				buffer.append(tuple._1 + ": " + tuple._2.size() + " pages.\n");
-				return buffer;
+		 */
+		JavaRDD<String> infoRDD = 
+				trackTableRDD.map(new Function<Tuple2<String,HashSet<PageIndex>>, String>() {
+			public String call(Tuple2<String, HashSet<PageIndex>> tuple) throws Exception {
+				String info = tuple._1 + ": " + tuple._2.size() + " pages.\n";
+				return info;
 			}
-		}; 
-		Function2<StringBuffer, StringBuffer, StringBuffer> combOp = 
-				new Function2<StringBuffer, StringBuffer, StringBuffer>() {
-			public StringBuffer call(StringBuffer b1, StringBuffer b2) throws Exception {
-				b1.append(b2);
-				return b1;
-			}
-		};
-		scriptBuffer.append(trackTableRDD.aggregate(emptyBuffer, seqOp, combOp));
+		});
 
 		// save to hdfs
 		HDFSFileService hdfs = new HDFSFileService();
-		hdfs.saveStringBufferHDFS(scriptBuffer, "trajectory-track-table-info");
+		hdfs.saveRDDToHDFS(infoRDD, "trajectory-track-table-info");
 	}
 	
 	/**
