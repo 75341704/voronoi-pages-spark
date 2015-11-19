@@ -1,7 +1,6 @@
  package uq.spark.query;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -373,15 +372,7 @@ public class SelectionQuery implements Serializable, SparkEnvInterface, IndexPar
 		final int TPIini = (int)(t0 / TIME_WINDOW_SIZE) + 1;
 		final int TPIend = (int)(t1 / TIME_WINDOW_SIZE) + 1;
 				
-		// pages to retrieve <VSI, TPI>
-		List<PageIndex> indexList = new ArrayList<PageIndex>();
-		for(Integer VSI : candidatesVSI){
-			for(int TPI = TPIini; TPI <= TPIend; TPI++){
-				indexList.add(new PageIndex(VSI, TPI));
-			}
-		}
-
 		// Filter pages from the Voronoi RDD (filter)
-		return pagesRDD.filterPagesByIndex(indexList);
+		return pagesRDD.filterPagesByIndex(candidatesVSI, TPIini, TPIend);
 	}
 }

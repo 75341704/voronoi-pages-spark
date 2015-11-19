@@ -99,9 +99,8 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 		{
 			log.add("Spatial-Temporal Selection Query Result:\n");
 			int i=1;
-			for(int j=0; j<10; j++){//STObject stObj : stUseCases){//
-				STObject stObj = stUseCases.get(j);
-				
+			for(STObject stObj : stUseCases){//int j=0; j<30; j++){//
+				//STObject stObj = stUseCases.get(j);
 				long start = System.currentTimeMillis();
 				// run query
 				queryResult = queryService
@@ -123,9 +122,8 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 			log.add("\nKNN Query Result:\n");
 			int i=1;
 			final int k = 10; 
-			for(int j=0; j<5; j++){//Trajectory t : nnUseCases){//
-				Trajectory t = nnUseCases.get(j);
-				
+			for(Trajectory t : nnUseCases){//int j=0; j<10; j++){//
+				//Trajectory t = nnUseCases.get(j);
 				long start = System.currentTimeMillis();				
 				// run query
 				long tIni = t.timeIni();

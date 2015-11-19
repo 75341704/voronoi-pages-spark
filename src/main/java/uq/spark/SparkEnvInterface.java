@@ -32,8 +32,8 @@ public interface SparkEnvInterface extends IndexParamInterface {
 	
 	// path to the data set folders/files 
 	static final String DATA_PATH =
-			//HDFS_PATH + "/spark-data/trajectory-data/sample-1gb";
-			TACHYON_PATH + "/trajectory-data/sample-8gb";
+			HDFS_PATH + "/spark-data/trajectory-data/sample-1gb";
+			// TACHYON_PATH + "/trajectory-data/sample-8gb";
 			/*
 			TACHYON_PATH + "/trajectory-data/split1," + 
 			TACHYON_PATH + "/trajectory-data/split2," +

@@ -65,7 +65,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 					return s1.merge(s2);
 				}
 				// repartition after the reduce (group and sort pages by index)
-			}/*, NUM_PARTITIONS_PAGES*/).repartitionAndSortWithinPartitions(partitionerByVoronoioIndex());
+			}, NUM_PARTITIONS_PAGES);//.repartitionAndSortWithinPartitions(partitionerByVoronoioIndex());
 
 		return voronoiPagesRDD;
 	}
@@ -78,6 +78,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
      * are partitioned by key. Maps each key to a partition ID, 
      * from 0 to numPartitions - 1.
 	 */
+	@SuppressWarnings("unused")
 	private Partitioner partitionerByVoronoioIndex(){
 		// creates a new partitioner by pages index
 		Partitioner partitioner = new Partitioner() {
@@ -165,13 +166,14 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 		JavaPairRDD<PageIndex, Page> pagesRDD = voronoiPagesRDD.filter(
 				new Function<Tuple2<PageIndex,Page>, Boolean>() {
 			public Boolean call(Tuple2<PageIndex, Page> page) throws Exception {
-				return (indexList.contains(page._1) && !skipList.contains(page._1));
+				return (indexList.contains(page._1) && 
+						!skipList.contains(page._1));
 			}
 		});
 
 		// return partition with the results
 		return pagesRDD;//.coalesce(NUM_COALESCE);
-	}
+	}	
 	
 	/**
 	 * Filter all pages from this RDD that match the given
@@ -184,6 +186,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 	public JavaPairRDD<PageIndex, Page> filterPagesByIndex(
 			final Collection<Integer> VSIlist, 
 			final int TPIini, final int TPIend){
+
 		// filter partitions (pages) by the given indexes
 		JavaPairRDD<PageIndex, Page> pagesRDD = voronoiPagesRDD.filter(
 				new Function<Tuple2<PageIndex,Page>, Boolean>() {
@@ -266,8 +269,8 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 	 * @return Return a pair RDD from page index to number of elements.
 	 */
 	public JavaPairRDD<PageIndex, Integer> countByPageIndex(){
-		JavaPairRDD<PageIndex, Integer> countByKeyRDD = 
-			voronoiPagesRDD.mapToPair(new PairFunction<Tuple2<PageIndex,Page>, PageIndex, Integer>() {
+		JavaPairRDD<PageIndex, Integer> countByKeyRDD = voronoiPagesRDD
+			.mapToPair(new PairFunction<Tuple2<PageIndex,Page>, PageIndex, Integer>() {
 				public Tuple2<PageIndex, Integer> call(Tuple2<PageIndex, Page> page) throws Exception {
 					return new Tuple2<PageIndex, Integer>(page._1, page._2.size());
 				}
@@ -305,15 +308,19 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 	 * in this RDD dataset (after the map phase).
 	 */
 	public long getNumSubTrajectories(){
-		// map each page to a number of trajectories
-		final long total =  
-			voronoiPagesRDD.map(new Function<Tuple2<PageIndex,Page>, Long>() {
-				public Long call(Tuple2<PageIndex, Page> page) throws Exception {
-					return (long)page._2.size();
+		final long total =
+			// map each page to a number of trajectories (map in blocks)
+			voronoiPagesRDD.values().glom().map(new Function<List<Page>, Long>() {
+				public Long call(List<Page> pageList) throws Exception {
+					long count = 0;
+					for(Page page : pageList){
+						count += page.size();
+					}
+					return count;
 				}
 			}).reduce(new Function2<Long, Long, Long>() {
 				public Long call(Long v1, Long v2) throws Exception {
-					return (v1+v2);
+					return (v1 + v2);
 				}
 			});
 		return total;
@@ -324,15 +331,19 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 	 * in this RDD dataset.
 	 */
 	public long getNumPoints(){
-		// map each page to a number of points
-		final long total =  
-			voronoiPagesRDD.map(new Function<Tuple2<PageIndex,Page>, Long>() {
-				public Long call(Tuple2<PageIndex, Page> page) throws Exception {
-					return (long)page._2.getPointsList().size();
+		final long total =
+			// map each page to a number of points (map in blocks)
+			voronoiPagesRDD.values().glom().map(new Function<List<Page>, Long>() {
+				public Long call(List<Page> pageList) throws Exception {
+					long count = 0;
+					for(Page page : pageList){
+						count += page.getPointsList().size();
+					}
+					return count;
 				}
 			}).reduce(new Function2<Long, Long, Long>() {
 				public Long call(Long v1, Long v2) throws Exception {
-					return (v1+v2);
+					return (v1 + v2);
 				}
 			});
 		return total;
