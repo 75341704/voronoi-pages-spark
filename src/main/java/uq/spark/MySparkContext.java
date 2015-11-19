@@ -14,10 +14,10 @@ public class MySparkContext {
 	private static final SparkConf conf = 
 			new SparkConf()
 			//.setMaster("local") 
-			.setAppName("SparkProject")//;
-			.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+			.setAppName("SparkProject");//;
+			/*.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
 	 		.set("spark.kryo.registrator", ClassRegistrator.class.getName())
-			.set("spark.kryoserializer.buffer.mb","128");// 24mb
+			.set("spark.kryoserializer.buffer.mb","128");*/// 24mb
 	private static final JavaSparkContext sc = new JavaSparkContext(conf);
 	
 	// listener to keep a log of the application runtime

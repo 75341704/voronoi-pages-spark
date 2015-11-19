@@ -96,10 +96,10 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 		/******
 		 * SPATIAL TEMPORAL SELECTION QUERIES
 		 ******/
-/*		{
+		{
 			log.add("Spatial-Temporal Selection Query Result:\n");
 			int i=1;
-			for(int j=0; j<10; j++){//STObject stObj : stUseCases){
+			for(int j=0; j<10; j++){//STObject stObj : stUseCases){//
 				STObject stObj = stUseCases.get(j);
 				
 				long start = System.currentTimeMillis();
@@ -114,7 +114,7 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 			}
 			log.add("\nSpatial-Temporal Selection ends at: " + System.currentTimeMillis() + "ms.");
 			log.add("Total Spatial-Temporal Selection Query Time: " + selecQueryTime + " ms.");
-		}
+		} 
 
 		/******
 		 * K-NN QUERIES
@@ -123,7 +123,7 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 			log.add("\nKNN Query Result:\n");
 			int i=1;
 			final int k = 10; 
-			for(int j=0; j<10; j++){//Trajectory t : nnUseCases){
+			for(int j=0; j<5; j++){//Trajectory t : nnUseCases){//
 				Trajectory t = nnUseCases.get(j);
 				
 				long start = System.currentTimeMillis();				
@@ -287,9 +287,10 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 	 */
 	public static void convertUseCasesToMercator(){
 		// file to read
-		File file = new File("C:/lol/file.txt");
+		BufferedReader buffer;
 		try {
-			BufferedReader buffer = new BufferedReader(
+			File file = new File("C:/lol/file.txt");
+			buffer = new BufferedReader(
 					new FileReader(file));
 			// each line of the current file
 			String line;

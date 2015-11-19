@@ -10,27 +10,8 @@ import uq.spatial.Point;
 * @author uqdalves
 */
 @SuppressWarnings("serial")
-class EDwPDistanceCalculator implements Serializable, DistanceInterface{
+class EDwPDistanceCalculator implements Serializable, DistanceInterface {
 
-/*	
-	public static void main(String[] args) {
-        Point p1 = new Point(new double[]{0,0});
-        Point p2 = new Point(new double[]{0,10});
-        Point p3 = new Point(new double[]{0,12});
-        ArrayList<Point> r =  new ArrayList<>();
-        r.add(p1); r.add(p2); r.add(p3);
-        
-        Point p4 = new Point(new double[]{2,0});
-        Point p5 = new Point(new double[]{2,7});
-        Point p6 = new Point(new double[]{2,10});
-        ArrayList<Point> s =  new ArrayList<>();
-        s.add(p4); s.add(p5); s.add(p6);
-        
-        double cost = getEDwP(r, s);
-        
-        System.out.println("Cost: " + cost);
-    }
-*/	
 	public double getDistance(ArrayList<Point> r, ArrayList<Point> s) {
 		double dist = getEDwP(r, s);
 		if(Double.isNaN(dist)){

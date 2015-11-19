@@ -45,6 +45,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 		// build the Voronoi pages RDD itself.
 		reducePagesByKey(pointToPagePairsRDD);
 		voronoiPagesRDD.setName("VoronoiPagesRDD");
+		voronoiPagesRDD.persist(STORAGE_LEVEL_PAGES);
 	}
 	
 	/**
@@ -57,15 +58,14 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 	 */
 	private JavaPairRDD<PageIndex, Page> reducePagesByKey(
 			JavaPairRDD<PageIndex, Page> pointToPagePairsRDD){
-		
+		// Reduce pairs by key function. Merge Pages
 		voronoiPagesRDD =
-			// Reduce pairs by key function. Merge Pages.
 			pointToPagePairsRDD.reduceByKey(new Function2<Page, Page, Page>() {
 				public Page call(Page s1, Page s2) throws Exception {
 					return s1.merge(s2);
 				}
 				// repartition after the reduce (group and sort pages by index)
-			}, NUM_PARTITIONS_PAGES);//.repartitionAndSortWithinPartitions(partitionerByVoronoioIndex());
+			}/*, NUM_PARTITIONS_PAGES*/).repartitionAndSortWithinPartitions(partitionerByVoronoioIndex());
 
 		return voronoiPagesRDD;
 	}
@@ -78,7 +78,6 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
      * are partitioned by key. Maps each key to a partition ID, 
      * from 0 to numPartitions - 1.
 	 */
-	@SuppressWarnings("unused")
 	private Partitioner partitionerByVoronoioIndex(){
 		// creates a new partitioner by pages index
 		Partitioner partitioner = new Partitioner() {

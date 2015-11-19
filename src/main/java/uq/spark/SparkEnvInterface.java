@@ -22,35 +22,49 @@ public interface SparkEnvInterface extends IndexParamInterface {
 			//"hdfs://master:54310";  // Cluster
 			"hdfs://localhost:9000";  // Local
 	
-	// root path to data locally
+	// path to Tachyon memory storage
+	static final String TACHYON_PATH =
+			"tachyon://localhost:19998"; 
+	
+	// path to data locally
 	static final String LOCAL_PATH =
 			"file:/media/bigdata/uqdalves/my-data";
 	
 	// path to the data set folders/files 
 	static final String DATA_PATH =
-			HDFS_PATH + "/spark-data/trajectory-data/sample-8gb";
-	/*
-			LOCAL_PATH + "/trajectory-data/split1," + 
-		//	LOCAL_PATH + "/trajectory-data/split2," +
-			LOCAL_PATH + "/trajectory-data/split3," +
-		//	LOCAL_PATH + "/trajectory-data/split4," +
-			LOCAL_PATH + "/trajectory-data/split5," +
-		//	LOCAL_PATH + "/trajectory-data/split6," +
-		//	LOCAL_PATH + "/trajectory-data/split7," +
-			LOCAL_PATH + "/trajectory-data/split8";
- */
-/*			HDFS_PATH + "/spark-data/trajectory-data/split1," + 
+			//HDFS_PATH + "/spark-data/trajectory-data/sample-1gb";
+			TACHYON_PATH + "/trajectory-data/sample-8gb";
+			/*
+			TACHYON_PATH + "/trajectory-data/split1," + 
+			TACHYON_PATH + "/trajectory-data/split2," +
+			TACHYON_PATH + "/trajectory-data/split3," +
+			TACHYON_PATH + "/trajectory-data/split4," +
+			TACHYON_PATH + "/trajectory-data/split5," +
+			TACHYON_PATH + "/trajectory-data/split6," +
+			TACHYON_PATH + "/trajectory-data/split7," +
+			TACHYON_PATH + "/trajectory-data/split8";
+			*//*
+			HDFS_PATH + "/spark-data/trajectory-data/split1," + 
 			HDFS_PATH + "/spark-data/trajectory-data/split2," +
 			HDFS_PATH + "/spark-data/trajectory-data/split3," +
 			HDFS_PATH + "/spark-data/trajectory-data/split4," +
-		//	HDFS_PATH + "/spark-data/trajectory-data/split5," +
-		//	HDFS_PATH + "/spark-data/trajectory-data/split6," +
-		//	HDFS_PATH + "/spark-data/trajectory-data/split7," +
-			HDFS_PATH + "/spark-data/trajectory-data/split8"; */
-
+			HDFS_PATH + "/spark-data/trajectory-data/split5," +
+			HDFS_PATH + "/spark-data/trajectory-data/split6," +
+			HDFS_PATH + "/spark-data/trajectory-data/split7," +
+			HDFS_PATH + "/spark-data/trajectory-data/split8";
+			*//*
+			LOCAL_PATH + "/trajectory-data/split1," + 
+			LOCAL_PATH + "/trajectory-data/split2," +
+			LOCAL_PATH + "/trajectory-data/split3," +
+			LOCAL_PATH + "/trajectory-data/split4," +
+			LOCAL_PATH + "/trajectory-data/split5," +
+			LOCAL_PATH + "/trajectory-data/split6," +
+			LOCAL_PATH + "/trajectory-data/split7," +
+			LOCAL_PATH + "/trajectory-data/split8";*/
+	
 	// path to pivots file inside HDFS
 	static final String PIVOTS_PATH = 
-			"/spark-data/pivots/mercator/128g-pivots-random-" + K + ".txt";
+			"/spark-data/pivots/mercator/1g-pivots-random-" + K + ".txt";
 	
 	// path to output folder inside HDFS
 	static final String HDFS_OUTPUT = 
@@ -74,17 +88,17 @@ public interface SparkEnvInterface extends IndexParamInterface {
 	// number of reduce tasks for the indexing process
 	static final int NUM_PARTITIONS_TTT = 2 * NUM_PARTITIONS_DATA;
 		
-	// Spark storage level for the partitioning process
+	// RDD storage level for the partitioning process
 	static final StorageLevel STORAGE_LEVEL_PARTITIONIG = 
-			StorageLevel.MEMORY_ONLY_SER();
+			StorageLevel.MEMORY_ONLY();
 	
-	// Spark storage level of the Pages RDD
+	// RDD storage level of the Pages RDD
 	static final StorageLevel STORAGE_LEVEL_PAGES = 
-			StorageLevel.MEMORY_ONLY_SER();
+			StorageLevel.MEMORY_ONLY();
 	
-	// Spark storage level of the Trajectory Track Table
+	// RDD storage level of the Trajectory Track Table
 	static final StorageLevel STORAGE_LEVEL_TTT = 
-			StorageLevel.MEMORY_ONLY_SER();
+			StorageLevel.MEMORY_ONLY();
 
 	// an infinity value
 	static final double INF = Double.MAX_VALUE;

@@ -9,6 +9,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
+import org.apache.spark.broadcast.Broadcast;
 
 import scala.Tuple2;
 import uq.spark.SparkEnvInterface;
@@ -29,14 +30,14 @@ import uq.spatial.Trajectory;
 @SuppressWarnings("serial")
 public class SelectionQuery implements Serializable, SparkEnvInterface, IndexParamInterface {
 	private VoronoiPagesRDD pagesRDD;
-	private VoronoiDiagram diagram;
+	private Broadcast<VoronoiDiagram> diagram;
 
 	/**
 	 * Constructor. Receives the PagesRDD and a copy of the Voronoi diagram.
 	 */
 	public SelectionQuery(
 			final VoronoiPagesRDD pagesRDD, 
-			final VoronoiDiagram diagram) {
+			final Broadcast<VoronoiDiagram> diagram) {
 		this.pagesRDD = pagesRDD;
 		this.diagram = diagram;
 	}
@@ -49,32 +50,14 @@ public class SelectionQuery implements Serializable, SparkEnvInterface, IndexPar
 	 * Return a list of trajectory/sub-trajectories (SelectObjects) 
 	 * that satisfy the query.
 	 */
-	public List<SelectObject> runSelectionQuery(final Box region, final long t0, final long t1){
-
+	public List<SelectObject> runSpatialTemporalSelection(
+			final Box region, final long t0, final long t1){
 		/*******************
 		 *  FILTERING STEP:
 		 *******************/
-		
-		// retrieve candidate polygons IDs = VSIs
-		// check for polygons that overlaps with the query range
-		List<Integer> candidatesVSI =
-				diagram.getOverlapingPolygons(region);
-
-		// get page(s) time index to retrieve
-		final int TPIini = (int)(t0 / TIME_WINDOW_SIZE) + 1;
-		final int TPIend = (int)(t1 / TIME_WINDOW_SIZE) + 1;
-				
-		// pages to retrieve <VSI, TPI>
-		List<PageIndex> indexList = new ArrayList<PageIndex>();
-		for(Integer VSI : candidatesVSI){
-			for(int TPI = TPIini; TPI <= TPIend; TPI++){
-				indexList.add(new PageIndex(VSI, TPI));
-			}
-		}
-
 		// Filter pages from the Voronoi RDD (filter)
 		JavaPairRDD<PageIndex, Page> filteredPagesRDD = 
-				pagesRDD.filterPagesByIndex(indexList);
+				filterSpatialTemporal(region, t0, t1);
 		
 		/*******************
 		 *  REFINEMENT STEP:
@@ -120,25 +103,18 @@ public class SelectionQuery implements Serializable, SparkEnvInterface, IndexPar
 	 * Return a list of trajectory/sub-trajectories (SelectObjects) 
 	 * that satisfy the query.
 	 */
-	public List<SelectObject> runSelectionQuery(final Box region){
-		
+	public List<SelectObject> runSpatialSelection(
+			final Box region){
 		/*******************
 		 *  FILTERING STEP:
 		 *******************/
-		
-		// retrieve candidate polygons IDs = VSIs
-		// check for polygons that overlaps with the query range
-		List<Integer> candidatesVSI = 
-				diagram.getOverlapingPolygons(region);
-
-		// Retrieve pages from the Voronoi RDD (filter and collect)
+		// Filter pages from the Voronoi RDD (filter)
 		JavaPairRDD<PageIndex, Page> filteredPagesRDD = 
-				pagesRDD.filterPagesBySpatialIndex(candidatesVSI);
+				filterSpatial(region);
 		
 		/*******************
 		 *  REFINEMENT STEP:
-		 *******************/
-		
+		 *******************/		
 		// A MapReduce function to check which sub-trajectories in the page satisfy the query.
 		// Emit a <Tid, SubTrajectory> pair for every sub-trajectory satisfying the query
 		List<SelectObject> selectObjectList = filteredPagesRDD.flatMapToPair(
@@ -180,24 +156,18 @@ public class SelectionQuery implements Serializable, SparkEnvInterface, IndexPar
 	 * Return a list of trajectory/sub-trajectories (SelectObjects) 
 	 * that satisfy the query.
 	 */
-	public List<SelectObject> runSelectionQuery(final long t0, final long t1){
-
+	public List<SelectObject> runTemporalSelection(
+			final long t0, final long t1){
 		/*******************
 		 *  FILTERING STEP:
 		 *******************/
-
-		// get page(s) time index to retrieve
-		final int TPIini = (int)(t0 / TIME_WINDOW_SIZE) + 1;
-		final int TPIend = (int)(t1 / TIME_WINDOW_SIZE) + 1;
-				
-		// Retrieve pages from the Voronoi RDD (filter)
+		// Filter pages from the Voronoi RDD (filter)
 		JavaPairRDD<PageIndex, Page> filteredPagesRDD = 
-				pagesRDD.filterPagesByTimeIndex(TPIini, TPIend);
-
+				filterTemporal(t0, t1);
+		
 		/*******************
 		 *  REFINEMENT STEP:
-		 *******************/
-		
+		 *******************/		
 		// A MapReduce function to check which sub-trajectories in the page satisfy the query.
 		// Emit a <Tid, SubTrajectory> pair for every sub-trajectory satisfying the query
 		List<SelectObject> selectObjectList = filteredPagesRDD.flatMapToPair(
@@ -238,37 +208,18 @@ public class SelectionQuery implements Serializable, SparkEnvInterface, IndexPar
 	 * </br>
 	 * Return a list of trajectory IDs
 	 */
-	public List<String> runSelectionQueryId(final Box region, final long t0, final long t1){
-
+	public List<String> runSpatialTemporalSelectionId(
+			final Box region, final long t0, final long t1){
 		/*******************
 		 *  FILTERING STEP:
 		 *******************/
-		
-		// retrieve candidate polygons IDs = VSIs
-		// check for polygons that overlaps with the query range
-		List<Integer> candidatesVSI =
-				diagram.getOverlapingPolygons(region);
-
-		// get page(s) time index to retrieve
-		final int TPIini = (int)(t0 / TIME_WINDOW_SIZE) + 1;
-		final int TPIend = (int)(t1 / TIME_WINDOW_SIZE) + 1;
-				
-		// pages to retrieve <VSI, TPI>
-		List<PageIndex> indexList = new ArrayList<PageIndex>();
-		for(Integer VSI : candidatesVSI){
-			for(int TPI = TPIini; TPI <= TPIend; TPI++){
-				indexList.add(new PageIndex(VSI, TPI));
-			}
-		}
-
 		// Filter pages from the Voronoi RDD (filter)
 		JavaPairRDD<PageIndex, Page> filteredPagesRDD = 
-				pagesRDD.filterPagesByIndex(indexList);
+				filterSpatialTemporal(region, t0, t1);
 		
 		/*******************
 		 *  REFINEMENT STEP:
 		 *******************/
-
 		List<String> trajectoryIdList = 
 			// map each page to a list of sub-trajectory IDs that satisfy the query
 			filteredPagesRDD.flatMap(new FlatMapFunction<Tuple2<PageIndex,Page>, String>() {
@@ -289,7 +240,7 @@ public class SelectionQuery implements Serializable, SparkEnvInterface, IndexPar
 					return selectedList;
 				}
 			}).distinct().collect();
-				
+
 		return trajectoryIdList;
 	}
 	
@@ -299,25 +250,18 @@ public class SelectionQuery implements Serializable, SparkEnvInterface, IndexPar
 	 * </br>
 	 * Return a list of trajectory IDs.
 	 */
-	public List<String> runSelectionQueryId(final Box region){
-		
+	public List<String> runSpatialSelectionId(
+			final Box region){
 		/*******************
 		 *  FILTERING STEP:
 		 *******************/
-		
-		// retrieve candidate polygons IDs = VSIs
-		// check for polygons that overlaps with the query range
-		List<Integer> candidatesVSI = 
-				diagram.getOverlapingPolygons(region);
-
-		// Retrieve pages from the Voronoi RDD (filter and collect)
+		// Filter pages from the Voronoi RDD (filter)
 		JavaPairRDD<PageIndex, Page> filteredPagesRDD = 
-				pagesRDD.filterPagesBySpatialIndex(candidatesVSI);
+				filterSpatial(region);
 		
 		/*******************
 		 *  REFINEMENT STEP:
 		 *******************/
-		
 		List<String> trajectoryIdList = 
 			// map each page to a list of sub-trajectory IDs that satisfy the query
 			filteredPagesRDD.flatMap(new FlatMapFunction<Tuple2<PageIndex,Page>, String>() {
@@ -349,24 +293,18 @@ public class SelectionQuery implements Serializable, SparkEnvInterface, IndexPar
 	 * </br>
 	 * Return a list of trajectory IDs.
 	 */
-	public List<String> runSelectionQueryId(final long t0, final long t1){
-
+	public List<String> runTemporalSelectionId(
+			final long t0, final long t1){
 		/*******************
 		 *  FILTERING STEP:
 		 *******************/
-
-		// get page(s) time index to retrieve
-		final int TPIini = (int)(t0 / TIME_WINDOW_SIZE) + 1;
-		final int TPIend = (int)(t1 / TIME_WINDOW_SIZE) + 1;
-				
-		// Retrieve pages from the Voronoi RDD (filter)
+		// Filter pages from the Voronoi RDD (filter)
 		JavaPairRDD<PageIndex, Page> filteredPagesRDD = 
-				pagesRDD.filterPagesByTimeIndex(TPIini, TPIend);
-
+				filterTemporal(t0, t1);
+		
 		/*******************
 		 *  REFINEMENT STEP:
 		 *******************/
-		
 		List<String> trajectoryIdList = 
 			// map each page to a list of sub-trajectory IDs that satisfy the query
 			filteredPagesRDD.flatMap(new FlatMapFunction<Tuple2<PageIndex,Page>, String>() {
@@ -389,5 +327,61 @@ public class SelectionQuery implements Serializable, SparkEnvInterface, IndexPar
 			}).distinct().collect();
 					
 		return trajectoryIdList;
+	}
+
+	/**
+	 * Filter step of the spatial selection query.
+	 * @return 
+	 */
+	private JavaPairRDD<PageIndex, Page> filterSpatial(
+			final Box region){
+		// retrieve candidate polygons IDs = VSIs
+		// check for polygons that overlaps with the query range
+		List<Integer> candidatesVSI = 
+				diagram.value().getOverlapingPolygons(region);
+
+		// Retrieve pages from the Voronoi RDD (filter and collect)
+		return pagesRDD.filterPagesBySpatialIndex(candidatesVSI);
+	}
+	
+	/**
+	 * Filter step of temporal selection query.
+	 * @return 
+	 */
+	private JavaPairRDD<PageIndex, Page> filterTemporal(
+			final long t0, final long t1){
+		// get page(s) time index to retrieve
+		final int TPIini = (int)(t0 / TIME_WINDOW_SIZE) + 1;
+		final int TPIend = (int)(t1 / TIME_WINDOW_SIZE) + 1;
+				
+		// Retrieve pages from the Voronoi RDD (filter)
+		return pagesRDD.filterPagesByTimeIndex(TPIini, TPIend);
+	}
+	
+	/**
+	 * Filter step of the spatial temporal selection query.
+	 * @return 
+	 */
+	private JavaPairRDD<PageIndex, Page> filterSpatialTemporal(
+			final Box region, final long t0, final long t1){
+		// retrieve candidate polygons IDs = VSIs
+		// check for polygons that overlaps with the query range
+		List<Integer> candidatesVSI =
+				diagram.value().getOverlapingPolygons(region);
+
+		// get page(s) time index to retrieve
+		final int TPIini = (int)(t0 / TIME_WINDOW_SIZE) + 1;
+		final int TPIend = (int)(t1 / TIME_WINDOW_SIZE) + 1;
+				
+		// pages to retrieve <VSI, TPI>
+		List<PageIndex> indexList = new ArrayList<PageIndex>();
+		for(Integer VSI : candidatesVSI){
+			for(int TPI = TPIini; TPI <= TPIend; TPI++){
+				indexList.add(new PageIndex(VSI, TPI));
+			}
+		}
+
+		// Filter pages from the Voronoi RDD (filter)
+		return pagesRDD.filterPagesByIndex(indexList);
 	}
 }

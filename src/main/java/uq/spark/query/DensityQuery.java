@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.spark.broadcast.Broadcast;
+
 import uq.spark.SparkEnvInterface;
 import uq.spark.indexing.IndexParamInterface;
 import uq.spark.indexing.VoronoiDiagram;
@@ -24,12 +26,15 @@ import uq.spatial.clustering.DBSCAN;
 @SuppressWarnings("serial")
 public class DensityQuery implements Serializable, SparkEnvInterface, IndexParamInterface {
 	private VoronoiPagesRDD pagesRDD;
-	private VoronoiDiagram diagram;
+	private Broadcast<VoronoiDiagram> diagram;
 	
 	/**
-	 * Constructor. Receives the PagesRDD and an instance of the Voronoi diagram.
+	 * Constructor. Receives the PagesRDD and an 
+	 * instance of the Voronoi diagram.
 	 */
-	public DensityQuery(VoronoiPagesRDD pagesRDD, VoronoiDiagram diagram) {
+	public DensityQuery(
+			final VoronoiPagesRDD pagesRDD, 
+			final Broadcast<VoronoiDiagram> diagram) {
 		this.pagesRDD = pagesRDD;
 		this.diagram = diagram;
 	}
@@ -62,7 +67,7 @@ public class DensityQuery implements Serializable, SparkEnvInterface, IndexParam
 		SelectionQuery query = 
 				new SelectionQuery(pagesRDD, diagram);
 		List<SelectObject> selectedList = 
-				query.runSelectionQuery(region);
+				query.runSpatialSelection(region);
 		
 		/*******************
 		 *  FILTERING STEP:
@@ -106,7 +111,7 @@ public class DensityQuery implements Serializable, SparkEnvInterface, IndexParam
 		/*******************
 		 *  FILTERING STEP:
 		 *******************/
-
+/*
 		// run a selection query to return trajectories that
 		// overlap with the query region and time interval
 		SelectionQuery query = 
@@ -117,7 +122,7 @@ public class DensityQuery implements Serializable, SparkEnvInterface, IndexParam
 		/*******************
 		 *  FILTERING STEP:
 		 *******************/
-		
+/*		
 		// the list of points to cluster
 		List<Point> pointsList = new LinkedList<Point>();
 		for(SelectObject obj : selectedList){
@@ -130,5 +135,6 @@ public class DensityQuery implements Serializable, SparkEnvInterface, IndexParam
 				DBSCAN.cluster(pointsList, distanceThresold, minPoints);
 
 		return clusterList;
+*/		return null;
 	}
 }

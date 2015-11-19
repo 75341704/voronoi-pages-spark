@@ -2,6 +2,7 @@ package uq.spark.query;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.spark.broadcast.Broadcast;
@@ -41,10 +42,10 @@ public class QueryProcessingService implements Serializable {
 		collector = new TrajectoryCollector(voronoiPagesRDD, trajectoryTrackTable);
 		
 		// initialize query services
-		selectionQuery = new SelectionQuery(voronoiPagesRDD, voronoiDiagram.value());
-		crossQuery = new CrossQuery(voronoiPagesRDD, voronoiDiagram.value());
-		nnQuery = new NearestNeighborQuery(voronoiPagesRDD, voronoiDiagram.value(), trajectoryTrackTable);
-		densityQuery = new DensityQuery(voronoiPagesRDD, voronoiDiagram.value());
+		selectionQuery = new SelectionQuery(voronoiPagesRDD, voronoiDiagram);
+		crossQuery = new CrossQuery(voronoiPagesRDD, voronoiDiagram);
+		nnQuery = new NearestNeighborQuery(voronoiPagesRDD, voronoiDiagram, trajectoryTrackTable);
+		densityQuery = new DensityQuery(voronoiPagesRDD, voronoiDiagram);
 	}
 
 	/**
@@ -65,7 +66,7 @@ public class QueryProcessingService implements Serializable {
 		List<Trajectory> trajectoryList = new ArrayList<Trajectory>();
 		if(!whole){
 			List<SelectObject> resultList = // query result
-				selectionQuery.runSelectionQuery(region, t0, t1);
+				selectionQuery.runSpatialTemporalSelection(region, t0, t1);
 			for(SelectObject obj : resultList){
 				trajectoryList.addAll(obj.getSubTrajectoryList());
 			}
@@ -74,10 +75,10 @@ public class QueryProcessingService implements Serializable {
 		
 		// collect whole trajectories
 		List<String> resultIdList = // query result
-				selectionQuery.runSelectionQueryId(region, t0, t1);
+				selectionQuery.runSpatialTemporalSelectionId(region, t0, t1);
 		trajectoryList = 
 				collector.collectTrajectoriesById(resultIdList).collect();
-
+		
 		return trajectoryList;	
 	}
 	
@@ -97,7 +98,7 @@ public class QueryProcessingService implements Serializable {
 		List<Trajectory> trajectoryList = new ArrayList<Trajectory>();
 		if(!whole){
 			List<SelectObject> resultList = // query result
-					selectionQuery.runSelectionQuery(region);
+					selectionQuery.runSpatialSelection(region);
 			for(SelectObject obj : resultList){
 				trajectoryList.addAll(obj.getSubTrajectoryList());
 			}
@@ -106,7 +107,7 @@ public class QueryProcessingService implements Serializable {
 		
 		// collect whole trajectories
 		List<String> resultIdList = // query result
-				selectionQuery.runSelectionQueryId(region);
+				selectionQuery.runSpatialSelectionId(region);
 		trajectoryList = 
 				collector.collectTrajectoriesById(resultIdList).collect();
 		
@@ -130,7 +131,7 @@ public class QueryProcessingService implements Serializable {
 		List<Trajectory> trajectoryList = new ArrayList<Trajectory>();
 		if(!whole){
 			List<SelectObject> resultList =  // query result
-				selectionQuery.runSelectionQuery(t0, t1);
+				selectionQuery.runTemporalSelection(t0, t1);
 			for(SelectObject obj : resultList){
 				trajectoryList.addAll(obj.getSubTrajectoryList());
 			}
@@ -139,7 +140,7 @@ public class QueryProcessingService implements Serializable {
 		
 		// collect whole trajectories
 		List<String> resultIdList = // query result
-				selectionQuery.runSelectionQueryId(t0, t1);
+				selectionQuery.runTemporalSelectionId(t0, t1);
 		trajectoryList = 
 				collector.collectTrajectoriesById(resultIdList).collect();
 
@@ -222,17 +223,22 @@ public class QueryProcessingService implements Serializable {
 	 * return all trajectories that have Q as their Nearest Neighbor
 	 * (Most Similar Trajectory), within the interval [t0,t1].
 	 */
-	public List<NearNeighbor> getReverseNearestNeighbors(
+	public List<Trajectory> getReverseNearestNeighbors(
 			final Trajectory q, 
 			final long t0, final long t1){
 		
 		System.out.println("\nRunning Reverse NN Query..\n");
-		
-		// query result
-		List<NearNeighbor> resultList = 
-				nnQuery.runReverseNearestNeighborsQuery(q, t0, t1);
 
-		return resultList;		
+		// query result
+		Iterator<Trajectory> resultItr = 
+				nnQuery.runReverseNearestNeighborsQuery(q, t0, t1);
+		// collect result
+		List<Trajectory> rnnList = new ArrayList<Trajectory>();
+		while(resultItr.hasNext()){
+			rnnList.add(resultItr.next());
+		}
+		
+		return rnnList;		
 	}
 
 	/**

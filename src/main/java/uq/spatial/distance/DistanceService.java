@@ -20,7 +20,7 @@ public class DistanceService implements Serializable {
 	 * Edit distance with projections.
 	 */
 	public double EDwP(Trajectory r, Trajectory s){		
-		// make sure the original objects will not be changed
+		// make sure the original trajectories will not be changed
 		ArrayList<Point> r_clone = clonePointsList(r.getPointsList());
 		ArrayList<Point> s_clone = clonePointsList(s.getPointsList());
 		
@@ -32,7 +32,7 @@ public class DistanceService implements Serializable {
 	 * Euclidean distance for multidimensional time series.
 	 */
 	public double Euclidean(Trajectory r, Trajectory s){
-		// make sure the original objects will not be changed
+		// make sure the original trajectories will not be changed
 		ArrayList<Point> r_clone = clonePointsList(r.getPointsList());
 		ArrayList<Point> s_clone = clonePointsList(s.getPointsList());
 		
@@ -45,7 +45,7 @@ public class DistanceService implements Serializable {
 	 * Spatial Temporal Largest Common Sub-sequence.
 	 */
 	public double STLCSS(Trajectory r, Trajectory s){
-		// make sure the original objects will not be changed
+		// make sure the original trajectories will not be changed
 		ArrayList<Point> r_clone = clonePointsList(r.getPointsList());
 		ArrayList<Point> s_clone = clonePointsList(s.getPointsList());
 		
@@ -59,12 +59,10 @@ public class DistanceService implements Serializable {
 	 */
 	private ArrayList<Point> clonePointsList(List<Point> list){
 		ArrayList<Point> new_list = new ArrayList<Point>();
-		
 		for(Point p : list){
 			Point p_clone = p.clone();
 			new_list.add(p_clone);
 		}
-		
 		return new_list;
 	}
 /*	
@@ -103,4 +101,23 @@ public class DistanceService implements Serializable {
 		System.out.println("Dist T1 to T4: " + dist.STLCSS(t1, t4));
 		System.out.println("Dist T1 to (T3+T4): " + dist.STLCSS(t1, t2));
 	}*/
+	/*	
+	public static void main(String[] args) {
+        Point p1 = new Point(new double[]{0,0});
+        Point p2 = new Point(new double[]{0,10});
+        Point p3 = new Point(new double[]{0,12});
+        ArrayList<Point> r =  new ArrayList<>();
+        r.add(p1); r.add(p2); r.add(p3);
+        
+        Point p4 = new Point(new double[]{2,0});
+        Point p5 = new Point(new double[]{2,7});
+        Point p6 = new Point(new double[]{2,10});
+        ArrayList<Point> s =  new ArrayList<>();
+        s.add(p4); s.add(p5); s.add(p6);
+        
+        double cost = getEDwP(r, s);
+        
+        System.out.println("Cost: " + cost);
+    }
+*/	
 }

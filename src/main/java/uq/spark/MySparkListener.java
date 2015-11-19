@@ -41,7 +41,7 @@ public class MySparkListener implements SparkListener {
 	private HDFSFileService hdfs = new HDFSFileService();
 	// A information script to save after application run time
 	private List<String> log = new LinkedList<String>();
-	private String appName = "";
+	private String appName = "SparkProject";
 	private long timeIni;
 	private long timeEnd;
 	private long stageSum=0;

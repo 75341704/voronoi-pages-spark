@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.broadcast.Broadcast;
 
 import scala.Tuple2;
 import uq.spark.SparkEnvInterface;
@@ -26,14 +27,14 @@ import uq.spatial.Trajectory;
 @SuppressWarnings("serial")
 public class CrossQuery implements Serializable, SparkEnvInterface {
 	private VoronoiPagesRDD pagesRDD;
-	private VoronoiDiagram diagram;
+	private Broadcast<VoronoiDiagram> diagram;
 	
 	/**
 	 * Constructor. Receives the PagesRDD and a copy of the Voronoi diagram.
 	 */
 	public CrossQuery(
 			final VoronoiPagesRDD pagesRDD, 
-			final VoronoiDiagram diagram) {
+			final Broadcast<VoronoiDiagram> diagram) {
 		this.pagesRDD = pagesRDD;
 		this.diagram = diagram;
 	}
@@ -60,7 +61,7 @@ public class CrossQuery implements Serializable, SparkEnvInterface {
 		SelectionQuery query = 
 				new SelectionQuery(pagesRDD, diagram);
 		List<SelectObject> candidateList = 
-				query.runSelectionQuery(region);
+				query.runSpatialSelection(region);
 		
 		/*******************
 		 *  FILTERING STEP:
@@ -101,7 +102,7 @@ public class CrossQuery implements Serializable, SparkEnvInterface {
 		// retrieve candidate polygons IDs = VSIs
 		// check for polygons that overlaps with the query range
 		List<Integer> candidatesVSI = 
-				diagram.getOverlapingPolygons(region);
+				diagram.value().getOverlapingPolygons(region);
 
 		// Retrieve pages from the Voronoi RDD (filter and collect)
 		JavaPairRDD<PageIndex, Page> filteredPagesRDD = 

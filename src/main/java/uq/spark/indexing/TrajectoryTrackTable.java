@@ -44,10 +44,9 @@ public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
 	public void build(JavaPairRDD<PageIndex, Page> trajectoryToPageRDD){	
 		// Map trajectories to overlapping pages.
 		// Map each pair <PageIndex, Page={sub-trajectory}> to <TrajectoryID, PageIndex Set>
-		trackTableRDD = 
-				//assignTrajectoryToPageSet(trajectoryToPageRDD);
-				mapTrajectoryToPageSet(trajectoryToPageRDD);
+		mapTrajectoryToPageSet(trajectoryToPageRDD);
 		trackTableRDD.setName("TrajectoryTrackTable");
+		trackTableRDD.persist(STORAGE_LEVEL_TTT);
 	}
 	
 	/**
@@ -57,11 +56,10 @@ public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
 	 * Return a RDD of pairs: (TrajectoryID, Set of PagesIndex)
 	 */
 	private JavaPairRDD<String, HashSet<PageIndex>> mapTrajectoryToPageSet(
-			final JavaPairRDD<PageIndex, Page> trajectoryToPageRDD){
-		
+			final JavaPairRDD<PageIndex, Page> trajectoriesToPagesRDD){
 		// map each page to a list of <TrajecrotyID, Page>
 		JavaPairRDD<String, PageIndex> trajectoryToPagePairRDD =
-			trajectoryToPageRDD.flatMapToPair(new PairFlatMapFunction<Tuple2<PageIndex,Page>, String, PageIndex>() {
+			trajectoriesToPagesRDD.flatMapToPair(new PairFlatMapFunction<Tuple2<PageIndex,Page>, String, PageIndex>() {
 				public Iterable<Tuple2<String, PageIndex>> call(Tuple2<PageIndex, Page> page) throws Exception {
 					List<Tuple2<String, PageIndex>> resultList = 
 							new ArrayList<Tuple2<String,PageIndex>>();
@@ -71,7 +69,7 @@ public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
 					return resultList;
 				}
 			});
-		
+
 		// aggregate zero value
 		HashSet<PageIndex> emptySet = new HashSet<PageIndex>();
 		// aggregate seq operation
@@ -93,7 +91,10 @@ public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
 		};
 		
 		// aggregates the index sets by trajectory ID
-		return trajectoryToPagePairRDD.aggregateByKey(emptySet, NUM_PARTITIONS_TTT, seqFunc, combFunc);
+		trackTableRDD = trajectoryToPagePairRDD
+				.aggregateByKey(emptySet, NUM_PARTITIONS_TTT, seqFunc, combFunc);
+		
+		return trackTableRDD;
 	}
 	
 	/**
@@ -159,7 +160,7 @@ public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
 				}
 			}).values();
 		HashSet<PageIndex> indexSet = new HashSet<PageIndex>();
-		if(filteredRDD.count() == 0){
+		if(filteredRDD.isEmpty()){
 			return indexSet;
 		}
 		else if(filteredRDD.count() == 1){
@@ -196,50 +197,9 @@ public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
 				// collect and merge tuple values
 			}).values();
 		HashSet<PageIndex> indexSet = new HashSet<PageIndex>();
-		if(filteredRDD.count() == 0){
+		if(filteredRDD.isEmpty()){
+			// return empty
 			return indexSet;
-		}else if(filteredRDD.count() == 1){
-			return filteredRDD.collect().get(0);
-		}else {
-			indexSet =
-				filteredRDD.reduce(new Function2<HashSet<PageIndex>, HashSet<PageIndex>, HashSet<PageIndex>>() {
-					public HashSet<PageIndex> call(HashSet<PageIndex> indexSet1, 
-												   HashSet<PageIndex> indexSet2) throws Exception {
-						indexSet1.addAll(indexSet2);
-						return indexSet1;
-					}
-				});
-			return indexSet; 
-		}
-	}
-	
-	/**
-	 * Return all page indexes for a given trajectory set, 
-	 * except those pages in skipSet (return the difference
-	 * set).
-	 * </br>
-	 * Collect all pages indexes that contain any of the 
-	 * trajectories in the set. Skip pages in skipSet.
-	 * 
-	 * @return Return a set of Page Indexes <VSI = PivotID, TPI = TimePage>.
-	 */
-	public HashSet<PageIndex> collectPageIndexListByTrajectoryId(
-			final Collection<String> trajectoryIdList,
-			final Collection<PageIndex> skipSet){
-		// Filter tuples
-		JavaRDD<HashSet<PageIndex>> filteredRDD = 
-			trackTableRDD.filter(new Function<Tuple2<String,HashSet<PageIndex>>, Boolean>() {
-				public Boolean call(Tuple2<String, HashSet<PageIndex>> tuple) throws Exception {
-					return trajectoryIdList.contains(tuple._1);
-				}
-				// collect and merge tuple values
-			}).values();
-		HashSet<PageIndex> indexSet = new HashSet<PageIndex>();
-		if(filteredRDD.count() == 0){
-			return indexSet;
-		}
-		else if(filteredRDD.count() == 1){
-			return filteredRDD.collect().get(0);
 		} else {
 			indexSet =
 				filteredRDD.reduce(new Function2<HashSet<PageIndex>, HashSet<PageIndex>, HashSet<PageIndex>>() {
@@ -249,11 +209,10 @@ public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
 						return indexSet1;
 					}
 				});
-			// skip pages in skipSet
-			indexSet.removeAll(skipSet);
 			return indexSet; 
 		}
 	}
+
 	/**
 	 * Count the number of pages by trajectory ID.
 	 * 
@@ -309,11 +268,6 @@ public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
 	 * Save to HDFS output folder as "trajectory-track-table-info"
 	 */
 	public void saveTableInfo(){
-		/*StringBuffer scriptBuffer = new StringBuffer();
-		
-		scriptBuffer.append("Number of Trajectories (Tuples): " + this.count() + "\n");
-		scriptBuffer.append("Avg. Number of Pages per Trajectory: " + this.avgPagesPerTrajectory() + "\n\n");
-		 */
 		JavaRDD<String> infoRDD = 
 				trackTableRDD.map(new Function<Tuple2<String,HashSet<PageIndex>>, String>() {
 			public String call(Tuple2<String, HashSet<PageIndex>> tuple) throws Exception {
@@ -352,7 +306,5 @@ public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
 				System.out.println("}\n\n");
 			}
 		});
-	}
-	
-	
+	}	
 }

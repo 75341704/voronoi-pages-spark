@@ -96,7 +96,7 @@ public class PartitioningIndexingService implements Serializable, SparkEnvInterf
 				rddService.mapRawDataToTrajectoryMercRDD(fileRDD);
      	// Second map to assign each sub-trajectory to a Voronoi Page
      	JavaPairRDD<PageIndex, Page> trajectoryToPagePairsRDD = 
-     			mapTrajectoriesToPages(trajectoryRDD, getVoronoiDiagram().value());
+     			mapTrajectoriesToPages(trajectoryRDD, getVoronoiDiagram());
 
      	/**
      	 * BUILD VORONOI PAGES RDD (REDUCE)
@@ -104,14 +104,12 @@ public class PartitioningIndexingService implements Serializable, SparkEnvInterf
      	// group pages by Index
       	voronoiPagesRDD = new VoronoiPagesRDD();
 		voronoiPagesRDD.build(trajectoryToPagePairsRDD);
-		voronoiPagesRDD.persist(STORAGE_LEVEL_PAGES);
 		
 		/**
 		 * BUILD TRAJECTORY TRACK TABLE (MAP/REDUCE)
 		 */
      	trajectoryTrackTable = new TrajectoryTrackTable();
      	trajectoryTrackTable.build(trajectoryToPagePairsRDD);
-     	trajectoryTrackTable.persist(STORAGE_LEVEL_TTT);
      	
      	/**
      	 * OUTPUT
@@ -153,17 +151,17 @@ public class PartitioningIndexingService implements Serializable, SparkEnvInterf
      * <PageIndex = (Pivot ID, Time Page), Page = {sub-trajectory}>
      * 
 	 */
-	public JavaPairRDD<PageIndex, Page>
-		mapTrajectoriesToPages(JavaRDD<Trajectory> trajectoryRDD, final VoronoiDiagram voronoiDiagram){
+	public JavaPairRDD<PageIndex, Page>	mapTrajectoriesToPages(
+				final JavaRDD<Trajectory> trajectoryRDD, 
+				final Broadcast<VoronoiDiagram> voronoiDiagram){
 
 		// Map trajectories to pages (sub-trajectories)
-		JavaPairRDD<PageIndex, Page> trajToPagePairsRDD = trajectoryRDD
-
+		JavaPairRDD<PageIndex, Page> trajectoriesToPagesRDD = trajectoryRDD
 	     	.mapPartitionsToPair(new PairFlatMapFunction<Iterator<Trajectory>, PageIndex, Page>() {
-	
-				// collect pivots, inside each map job (broadcasted variable)
+				
+	     		// collect pivots, inside each map job (broadcasted variable)
 				final List<Point> pivotList = 
-						voronoiDiagram.getPivots();
+						voronoiDiagram.value().getPivots();
 				
 				public Iterable<Tuple2<PageIndex, Page>> call(Iterator<Trajectory> trajectoryItr) throws Exception {
 					// An iterable list to return	
@@ -244,6 +242,6 @@ public class PartitioningIndexingService implements Serializable, SparkEnvInterf
 				}
 			});
 			
-		return trajToPagePairsRDD;
+		return trajectoriesToPagesRDD;
 	}
 }

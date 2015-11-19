@@ -83,23 +83,25 @@ public class TrajectoryCollector implements Serializable{
 		
 		return trajectory;
 	}
-	
+		
 	/**
-	 * Given a set of trajectory IDs, retrieve 
-	 * the given trajectories from the Pages RDD. 
+	 * Given a set of trajectory IDs, retrieve the given 
+	 * trajectories from the Pages RDD. 
+	 * </br>
 	 * Retrieve whole trajectories.
+	 * </br>
 	 * Post-process after collection.
 	 * 
 	 * @return Return a distributed dataset (RDD) of trajectories.
 	 * (Note: the given trajectories must be in the dataset)
 	 */
 	public JavaRDD<Trajectory> collectTrajectoriesById(
-			final Collection<String> trajectoryIdSet){		
+			final Collection<String> trajectoryIdSet){
 		// retrieve from the TTT the indexes of all pages that 
 		// contains the trajectories in the list
 		HashSet<PageIndex> indexSet = 
 				trackTable.collectPageIndexListByTrajectoryId(trajectoryIdSet);
-
+		
 		// filter pages that contains the specified trajectories
 		JavaPairRDD<PageIndex, Page> filteredPagesRDD = 
 				pagesRDD.filterPagesByIndex(indexSet);
@@ -173,32 +175,28 @@ public class TrajectoryCollector implements Serializable{
 
 		// check if there is any page to for the given parameters
 		// Note: (it might be there is no page in the given time interval for the given polygon)
-		if(filteredPagesRDD.count() > 0){
+		if(!filteredPagesRDD.isEmpty()){			
 			// Collect the IDs of the trajectories inside the given pages.
-			// for each page filtered, return the set of trajectories inside the page.
-			final HashSet<String> trajectoryIdSet = 
-				filteredPagesRDD.map(new Function<Tuple2<PageIndex,Page>, HashSet<String>>() {
-					public HashSet<String> call(Tuple2<PageIndex, Page> page) throws Exception {
+			final List<String> idList = 	
+				filteredPagesRDD.flatMap(new FlatMapFunction<Tuple2<PageIndex,Page>, String>() {
+					public Iterable<String> call(Tuple2<PageIndex, Page> page) throws Exception {
 						return page._2.getTrajectoryIdSet();
 					}
-				}).reduce(new Function2<HashSet<String>, HashSet<String>, HashSet<String>>() {
-					public HashSet<String> call(HashSet<String> set1, HashSet<String> set2) throws Exception {
-						set1.addAll(set2);
-						return set1;
-					}
-				});
+				}).distinct().collect();
 
 			// retrieve from the TTT the indexes of all pages that 
 			// contains the trajectories in the list.
-			// skip the pages already retrieved (collect the difference set)
 			HashSet<PageIndex> diffIndexSet = 
-					trackTable.collectPageIndexListByTrajectoryId(trajectoryIdSet, indexSet);
+					trackTable.collectPageIndexListByTrajectoryId(idList);
+
+			// skip the pages already retrieved 
+			diffIndexSet.removeAll(indexSet);
 
 			// filter the other pages that contain the trajectories (difference set)
-			JavaPairRDD<PageIndex, Page> diffPagesRDD = 
+			JavaPairRDD<PageIndex, Page>  diffPagesRDD = 
 					pagesRDD.filterPagesByIndex(diffIndexSet);
 
-			// groups the two Page RDDs (union set)
+			// union the two RDDs (union set)
 			filteredPagesRDD = filteredPagesRDD.union(diffPagesRDD);
 
 			// retrieved the desired trajectories
@@ -211,7 +209,7 @@ public class TrajectoryCollector implements Serializable{
 						List<Tuple2<String, Trajectory>> list = 
 								new LinkedList<Tuple2<String, Trajectory>>();
 						for(Trajectory sub : page._2.getTrajectoryList()){
-							if(trajectoryIdSet.contains(sub.id)){
+							if(idList.contains(sub.id)){
 								list.add(new Tuple2<String, Trajectory>(sub.id, sub));
 							}
 						}
@@ -268,7 +266,7 @@ public class TrajectoryCollector implements Serializable{
 
 		// for each page filtered, return the set of trajectories inside the page.
 		HashSet<String> trajectoryIdSet = new HashSet<String>();
-		if(filteredPagesRDD.count() > 0){
+		if(!filteredPagesRDD.isEmpty()){
 			trajectoryIdSet = 
 				filteredPagesRDD.map(new Function<Tuple2<PageIndex,Page>, HashSet<String>>() {
 					public HashSet<String> call(Tuple2<PageIndex, Page> page) throws Exception {

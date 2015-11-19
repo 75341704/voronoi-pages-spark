@@ -3,11 +3,15 @@ package uq.spark.query;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List; 
- 
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.broadcast.Broadcast;
 
 import uq.spark.SparkEnvInterface;
 import uq.spark.indexing.IndexParamInterface; 
@@ -30,8 +34,8 @@ import uq.spatial.distance.DistanceService;
 @SuppressWarnings("serial")
 public class NearestNeighborQuery implements Serializable, SparkEnvInterface, IndexParamInterface {
 	private VoronoiPagesRDD pagesRDD;
-	private VoronoiDiagram diagram;
 	private TrajectoryTrackTable trackTable;
+	private Broadcast<VoronoiDiagram> diagram;
 	
 	// trajectory collector service
 	private TrajectoryCollector collector = null;
@@ -50,7 +54,7 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 	 */
 	public NearestNeighborQuery(
 			final VoronoiPagesRDD pagesRDD, 
-			final VoronoiDiagram diagram,
+			final Broadcast<VoronoiDiagram> diagram,
 			final TrajectoryTrackTable trackTable) {
 		this.pagesRDD = pagesRDD;
 		this.diagram = diagram;
@@ -89,14 +93,14 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 		// check for polygons that overlaps with Q
 		Box mbr = q.mbr();
 		List<Integer> candidatePolygons = 
-				diagram.getOverlapingPolygons(mbr);
+				diagram.value().getOverlapingPolygons(mbr);
 		//HashSet<Integer> candidatePolygons = getOverlappingPolygons(q);
 
 		// for every polygon that overlap with the MBR of Q, 
 		// also add their neighbors to the candidates lists
 		HashSet<Integer> neighbors = new HashSet<Integer>();
 		for(int candidate : candidatePolygons){
-			neighbors.addAll(diagram.getPolygonByPivotId(candidate).getAdjacentList());
+			neighbors.addAll(diagram.value().getPolygonByPivotId(candidate).getAdjacentList());
 		} candidatePolygons.addAll(neighbors);
 
 		// get page(s) time index to retrieve
@@ -143,7 +147,7 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 					neighbors.add(index.VSI);
 				}
 				// add new adjacent poly
-				for(int vsi : diagram.getPolygonByPivotId(index.VSI).getAdjacentList()){
+				for(int vsi : diagram.value().getPolygonByPivotId(index.VSI).getAdjacentList()){
 					if(!candidatePolygons.contains(vsi)){
 						neighbors.add(vsi);
 					}
@@ -179,9 +183,12 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 	 * Given a query trajectory Q, a time interval t0 to t1,
 	 * return all trajectories that have Q as their Nearest Neighbor
 	 * (Most Similar Trajectory), within the interval [t0,t1]. 
+	 * 
+	 * @return Return a iterator stream of trajectories.
 	 */
-	public List<NearNeighbor> runReverseNearestNeighborsQuery( 
-			final Trajectory q, final long t0, final long t1){
+	public Iterator<Trajectory> runReverseNearestNeighborsQuery( 
+			final Trajectory q, 
+			final long t0, final long t1){
 
 		/*******************
 		 * FIRST FILTERING STEP:
@@ -194,14 +201,14 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 		// check for polygons that overlaps with Q
 		Box mbr = q.mbr();
 		List<Integer> candidatePolygons = 
-				diagram.getOverlapingPolygons(mbr);
+				diagram.value().getOverlapingPolygons(mbr);
 		//HashSet<Integer> candidatePolygons = getOverlappingPolygons(q);
 		
 		// for every polygon that overlap with the MBR of Q, 
 		// also add their neighbors to the candidates lists
 		HashSet<Integer> neighbors = new HashSet<Integer>();
 		for(int candidate : candidatePolygons){
-			neighbors.addAll(diagram.getPolygonByPivotId(candidate).getAdjacentList());
+			neighbors.addAll(diagram.value().getPolygonByPivotId(candidate).getAdjacentList());
 		} candidatePolygons.addAll(neighbors);
 
 		// get page(s) time index to retrieve
@@ -218,20 +225,24 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 		 * For each trajectory in the neighborhood of Q,  
 		 * find its NN and collect those with NN = Q
 		 *******************/
-
-		// calculate the NN of each trajectory and filter those with NN = Q
-	/*	List<Trajectory> rnnList = 
-			candidateRDD.filter(new Function<Trajectory, Boolean>() {
-				public Boolean call(Trajectory trajectory) throws Exception {
+		// collect the candidate trajectories as a parallel stream
+		Stream<Trajectory> candidatesList = 
+				candidateRDD.collect().parallelStream();
+		System.out.println("Candidates RNN Size: " + candidatesList.count());
+		Iterator<Trajectory> rnnItr = 	
+			candidatesList.filter(new Predicate<Trajectory>() {
+				public boolean test(Trajectory t) {
 					// get the NN of this trajectory
-					NearNeighbor nn = runNearestNeighborQuery(trajectory, t0, t1);
-					return nn.id.equals(q.id);
+					NearNeighbor nn = runNearestNeighborQuery(t, t0, t1);
+					double dist = distService.EDwP(q, t);
+					// check if the query object is closer to T than NN(T)
+					if(dist <= nn.distance){
+						return true;
+					}
+					return false;
 				}
-			}).collect();
-*/
-		List<Trajectory> candidatesList = candidateRDD.collect();
-		System.out.println("Candidates RNN List Size: " + candidatesList.size());
-		List<NearNeighbor> rnnList = new LinkedList<NearNeighbor>();
+			}).iterator();
+		/*
 		double dist = 0.0;
 		for(Trajectory t : candidatesList){
 			// get the NN of this trajectory
@@ -241,9 +252,9 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 			if(dist <= nn.distance){
 				rnnList.add(new NearNeighbor(t, dist));
 			}
-		}
+		}*/
 
-		return rnnList;
+		return rnnItr;
 	}
 
 	/**
