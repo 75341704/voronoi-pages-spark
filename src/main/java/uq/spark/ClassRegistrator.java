@@ -18,13 +18,16 @@ import uq.exp.TimeWindow;
 import uq.fs.DatasetStatisticsService;
 import uq.fs.FileToObjectRDDService;
 import uq.fs.HDFSFileService;
-import uq.spark.indexing.Page;
-import uq.spark.indexing.PageIndex;
-import uq.spark.indexing.PartitioningIndexingService;
-import uq.spark.indexing.PivotService;
-import uq.spark.indexing.TrajectoryTrackTable;
-import uq.spark.indexing.VoronoiDiagram;
-import uq.spark.indexing.VoronoiPagesRDD;
+import uq.fs.PivotsService;
+import uq.fs.TachyonFileService;
+import uq.spark.index.Page;
+import uq.spark.index.PageIndex;
+import uq.spark.index.PageIndexSet;
+import uq.spark.index.PartitioningIndexingService;
+import uq.spark.index.TrajectoryCollector;
+import uq.spark.index.TrajectoryTrackTable;
+import uq.spark.index.VoronoiDiagram;
+import uq.spark.index.VoronoiPagesRDD;
 import uq.spark.query.CrossQuery;
 import uq.spark.query.NearNeighbor;
 import uq.spark.query.NearestNeighborQuery;
@@ -38,6 +41,7 @@ import uq.spatial.Point;
 import uq.spatial.PointComparator;
 import uq.spatial.TimeComparator;
 import uq.spatial.Trajectory;
+import uq.spatial.TrajectoryRTree;
 import uq.spatial.clustering.Cluster;
 import uq.spatial.clustering.ClusterPoint;
 import uq.spatial.clustering.DBSCAN;
@@ -76,13 +80,16 @@ public class ClassRegistrator implements KryoRegistrator{
 		kryo.register(VoronoiDiagram.class, new FieldSerializer(kryo, VoronoiDiagram.class));
 		kryo.register(PageIndex.class, new FieldSerializer(kryo, PageIndex.class));
 		kryo.register(Page.class, new FieldSerializer(kryo, Page.class));
-		kryo.register(PivotService.class, new FieldSerializer(kryo, PivotService.class));
+		kryo.register(PageIndexSet.class, new FieldSerializer(kryo, PageIndexSet.class));
+		kryo.register(PivotsService.class, new FieldSerializer(kryo, PivotsService.class));
+		kryo.register(TrajectoryCollector.class, new FieldSerializer(kryo, TrajectoryCollector.class));
 		
 		// fs
 		kryo.register(HDFSFileService.class, new FieldSerializer(kryo, HDFSFileService.class));
 		kryo.register(FileToObjectRDDService.class, new FieldSerializer(kryo, FileToObjectRDDService.class));
 		kryo.register(DatasetStatisticsService.class, new FieldSerializer(kryo, DatasetStatisticsService.class));
-
+		kryo.register(TachyonFileService.class, new FieldSerializer(kryo, TachyonFileService.class));
+		
 		// spatial obj
 		kryo.register(Box.class, new FieldSerializer(kryo, Box.class));
 		kryo.register(Point.class, new FieldSerializer(kryo, Point.class));
@@ -90,6 +97,7 @@ public class ClassRegistrator implements KryoRegistrator{
 		kryo.register(Trajectory.class, new FieldSerializer(kryo, Trajectory.class));
 		kryo.register(PointComparator.class, new FieldSerializer(kryo, PointComparator.class));
 		kryo.register(TimeComparator.class, new FieldSerializer(kryo, TimeComparator.class));
+		kryo.register(TrajectoryRTree.class, new FieldSerializer(kryo, TrajectoryRTree.class));
 		
 		// query
 		kryo.register(QueryProcessingService.class, new FieldSerializer(kryo, QueryProcessingService.class));	

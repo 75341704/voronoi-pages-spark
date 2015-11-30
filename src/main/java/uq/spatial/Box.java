@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.sf.jsi.Rectangle;
+
 /**
  * A Box is defined as a 2D rectangle whose edges  
  * are parallel to the X and Y axis.
@@ -13,39 +15,46 @@ import java.util.List;
 @SuppressWarnings("serial")
 public class Box implements Serializable {
 	// X and Y axis position
-	public double left;
-	public double right;
-	public double top;
-	public double bottom;
-
+	public double minX;
+	public double maxX;
+	public double minY;
+	public double maxY;
+	
 	public Box(){}
-	public Box(double left, double right, double bottom, double top) {
-		this.top = top;
-		this.bottom = bottom;
-		this.left = left;
-		this.right = right;
+	public Box(double minX, double maxX, double minY, double maxY) {
+		this.minX = minX;
+		this.maxX = maxX;
+		this.minY = minY;
+		this.maxY = maxY;
 	}
-
+	
+	/**
+	 * Return the rectangle of this box.
+	 */
+	public Rectangle rectangle(){
+		return new Rectangle((float)minX,(float)minY,(float)maxX,(float)maxY);
+	}
+	
 	/**
 	 * The perimeter of this box
 	 */
 	public double perimeter(){
-		return (top + bottom + left + right);
+		return (2*Math.abs(maxY-minY) + 2*Math.abs(maxX-minX));
 	}
 	
 	/**
 	 * The area of this box
 	 */
 	public double area(){
-		return (top-bottom)*(right-left);
+		return (maxY-minY)*(maxX-minX);
 	}
 	
 	/**
 	 * Returns the center of this box as a coordinate point.
 	 */
 	public Point center(){
-		double xCenter = left + (right - left)/2;
-		double yCenter = bottom + (top - bottom)/2; 
+		double xCenter = minX + (maxX - minX)/2;
+		double yCenter = minY + (maxY - minY)/2; 
 		return new Point(xCenter, yCenter);
 	}
 
@@ -63,8 +72,8 @@ public class Box implements Serializable {
 	 * Point given by X and Y coordinates
 	 */
 	public boolean contains(double x, double y){
-		if(x > left && x < right &&
-		   y > bottom && y < top){
+		if(x > minX && x < maxX &&
+		   y > minY && y < maxY){
 			return true;
 		}
 		return false;
@@ -85,13 +94,13 @@ public class Box implements Serializable {
 	 */
 	public boolean touch(double x, double y){
 		// check top and bottom edges
-		if( x >= left && x <= right && 
-		   (y == top || y == bottom) ){
+		if( x >= minX && x <= maxX && 
+		   (y == maxY || y == minY) ){
 			return true;
 		}
 		// check left and right edges
-		if( y >= bottom && y <= top && 
-		   (x == left || x == right) ){
+		if( y >= minY && y <= maxY && 
+		   (x == minX || x == maxX) ){
 			return true;
 		}
 		return false;
@@ -120,22 +129,22 @@ public class Box implements Serializable {
 	public boolean intersect(double x1, double y1, double x2, double y2){
 		// check box LEFT edge
 		if(intersect(x1, y1, x2, y2, 
-				left, bottom, left, top)){
+				minX, minY, minX, maxY)){
 			return true;
 		}
 		// check RIGHT edge
 		if(intersect(x1, y1, x2, y2, 
-				right, bottom, right, top)){
+				maxX, minY, maxX, maxY)){
 			return true;
 		}
 		// check TOP edge
 		if(intersect(x1, y1, x2, y2, 
-				left, top, right, top)){
+				minX, maxY, maxX, maxY)){
 			return true;
 		}
 		// check BOTTOM edge
 		if(intersect(x1, y1, x2, y2, 
-				left, bottom, right, bottom)){
+				minX, minY, maxX, minY)){
 			return true;
 		}
     
@@ -147,10 +156,10 @@ public class Box implements Serializable {
 	 */
 	public List<Point> getVertexList(){
 		List<Point> corners = new ArrayList<Point>();
-		Point p1 = new Point(left, top);
-		Point p2 = new Point(right, top);
-		Point p3 = new Point(left, bottom);
-		Point p4 = new Point(right, bottom);
+		Point p1 = new Point(minX, maxY);
+		Point p2 = new Point(maxX, maxY);
+		Point p3 = new Point(minX, minY);
+		Point p4 = new Point(maxX, minY);
 		corners.add(p1);	corners.add(p2);
 		corners.add(p3);	corners.add(p4);
 		
@@ -162,8 +171,8 @@ public class Box implements Serializable {
 	 */
 	public void print(){
 		System.out.println("Box:");
-		System.out.println("("+left+", "+top+") " + " ("+right+", "+top+")");
-		System.out.println("("+left+", "+bottom+") " + " ("+right+", "+bottom+")");
+		System.out.println("("+minX+", "+maxY+") " + " ("+maxX+", "+maxY+")");
+		System.out.println("("+minX+", "+minY+") " + " ("+maxX+", "+minY+")");
 		System.out.println("Area: " + area());
 		System.out.println("Perimeter: " + perimeter());
 	}

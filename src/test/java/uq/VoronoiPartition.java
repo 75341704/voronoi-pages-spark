@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 
-import uq.spark.indexing.Page;
+import uq.spark.index.Page;
 import uq.spatial.Point;
 
 /**

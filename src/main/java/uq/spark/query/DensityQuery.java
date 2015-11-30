@@ -7,9 +7,9 @@ import java.util.List;
 import org.apache.spark.broadcast.Broadcast;
 
 import uq.spark.SparkEnvInterface;
-import uq.spark.indexing.IndexParamInterface;
-import uq.spark.indexing.VoronoiDiagram;
-import uq.spark.indexing.VoronoiPagesRDD;
+import uq.spark.index.IndexParamInterface;
+import uq.spark.index.VoronoiDiagram;
+import uq.spark.index.VoronoiPagesRDD;
 import uq.spatial.Box;
 import uq.spatial.Point;
 import uq.spatial.Trajectory;
@@ -61,8 +61,7 @@ public class DensityQuery implements Serializable, SparkEnvInterface, IndexParam
 		/*******************
 		 *  FILTERING STEP:
 		 *******************/
-
-		// run a selection query to return trajectories that
+/*		// run a selection query to return trajectories that
 		// overlap with the query region
 		SelectionQuery query = 
 				new SelectionQuery(pagesRDD, diagram);
@@ -72,8 +71,7 @@ public class DensityQuery implements Serializable, SparkEnvInterface, IndexParam
 		/*******************
 		 *  FILTERING STEP:
 		 *******************/
-		
-		// the list of points to cluster
+/*		// the list of points to cluster
 		List<Point> pointsList = new LinkedList<Point>();
 		for(SelectObject obj : selectedList){
 			for(Trajectory t : obj.getSubTrajectoryList()){
@@ -85,6 +83,8 @@ public class DensityQuery implements Serializable, SparkEnvInterface, IndexParam
 				DBSCAN.cluster(pointsList, distanceThresold, minPoints);
 
 		return clusterList;
+*/
+		return null;
 	}
 
 	/**
@@ -103,7 +103,8 @@ public class DensityQuery implements Serializable, SparkEnvInterface, IndexParam
 	 * 
 	 * @return A list of clusters of trajectory points.
 	 */
-	public List<Cluster> runDensityQuery(final Box region, 
+	public List<Cluster> runDensityQuery(
+			final Box region, 
 			final long t0, final long t1, 
 			final double distanceThresold, 
 			final int minPoints){

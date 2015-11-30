@@ -222,10 +222,10 @@ public class VoronoiPolygon implements Serializable, GeoInterface {
 		 * True is this Voronoi polygon overlaps with the given Box.
 		 */
 		public boolean overlap(Box box){
-			double x1 = box.left;
-			double y1 = box.bottom;
-			double x2 = box.right;
-			double y2 = box.top;
+			double x1 = box.minX;
+			double y1 = box.minY;
+			double x2 = box.maxX;
+			double y2 = box.maxY;
 
 			// check if the polygon's pivot is inside the box.
 			if(box.contains(this.pivot)){ 

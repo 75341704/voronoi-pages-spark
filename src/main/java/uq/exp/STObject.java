@@ -25,8 +25,8 @@ public class STObject implements Serializable {
 	}
 
 	public String toString(){
-		String s = region.left + " " + region.right + " " + 
-				region.bottom + " " + region.top + " " + 
+		String s = region.minX + " " + region.maxX + " " + 
+				region.minY + " " + region.maxY + " " + 
 				timeIni + " " + timeEnd;
 		return s;
 	}

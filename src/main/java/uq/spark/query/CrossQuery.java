@@ -10,10 +10,10 @@ import org.apache.spark.broadcast.Broadcast;
 
 import scala.Tuple2;
 import uq.spark.SparkEnvInterface;
-import uq.spark.indexing.Page;
-import uq.spark.indexing.PageIndex;
-import uq.spark.indexing.VoronoiDiagram;
-import uq.spark.indexing.VoronoiPagesRDD;
+import uq.spark.index.Page;
+import uq.spark.index.PageIndex;
+import uq.spark.index.VoronoiDiagram;
+import uq.spark.index.VoronoiPagesRDD;
 import uq.spatial.Box;
 import uq.spatial.Trajectory;
 
@@ -51,7 +51,7 @@ public class CrossQuery implements Serializable, SparkEnvInterface {
 		/*******************
 		 *  FILTERING STEP:
 		 *******************/
-		
+/*		
 		// Uses the trajectory bounding box to return 
 		// candidate trajectories.
 		Box region = q.mbr();
@@ -66,7 +66,7 @@ public class CrossQuery implements Serializable, SparkEnvInterface {
 		/*******************
 		 *  FILTERING STEP:
 		 *******************/
-		
+/*		
 		// check if the trajectories really intersect
 		List<SelectObject> resultList = 
 				new LinkedList<SelectObject>();
@@ -81,6 +81,8 @@ public class CrossQuery implements Serializable, SparkEnvInterface {
 		}
 
 		return resultList;
+		*/
+		return null;
 	}
 
 	/**
@@ -94,8 +96,7 @@ public class CrossQuery implements Serializable, SparkEnvInterface {
 		/*******************
 		 *  FILTERING STEP:
 		 *******************/
-		
-		// Uses the trajectory bounding box to return 
+/*		// Uses the trajectory bounding box to return 
 		// candidate trajectories.
 		Box region = q.mbr();
 		
@@ -111,8 +112,7 @@ public class CrossQuery implements Serializable, SparkEnvInterface {
 		/*******************
 		 *  REFINEMENT STEP:
 		 *******************/
-		
-		List<String> trajectoryIdList = 
+/*		List<String> trajectoryIdList = 
 			// map each page to a list of sub-trajectory IDs that satisfy the query
 			filteredPagesRDD.flatMap(new FlatMapFunction<Tuple2<PageIndex,Page>, String>() {
 				public Iterable<String> call(Tuple2<PageIndex, Page> page) throws Exception {
@@ -132,5 +132,7 @@ public class CrossQuery implements Serializable, SparkEnvInterface {
 			}).distinct().collect();
 					
 		return trajectoryIdList;
+*/
+		return null;
 	}
 }

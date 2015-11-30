@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
  
@@ -13,14 +14,14 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;
 
+import uq.fs.FileToObjectRDDService;
 import uq.fs.HDFSFileService;
 import uq.spark.SparkEnvInterface;
-import uq.spark.indexing.IndexParamInterface;
-import uq.spark.indexing.PartitioningIndexingService;
-import uq.spark.indexing.TrajectoryTrackTable;
-import uq.spark.indexing.VoronoiDiagram;
-import uq.spark.indexing.VoronoiPagesRDD;
-import uq.spark.query.NearNeighbor;
+import uq.spark.index.IndexParamInterface;
+import uq.spark.index.PartitioningIndexingService;
+import uq.spark.index.TrajectoryTrackTable;
+import uq.spark.index.VoronoiDiagram;
+import uq.spark.index.VoronoiPagesRDD;
 import uq.spark.query.QueryProcessingService;
 import uq.spatial.Box;
 import uq.spatial.GeoInterface;
@@ -36,23 +37,21 @@ import uq.spatial.transformation.ProjectionTransformation;
  */
 @SuppressWarnings("serial")
 public class ExperimentsService implements Serializable, SparkEnvInterface, IndexParamInterface, GeoInterface {
-	private static HDFSFileService hdfs = new HDFSFileService();
+	private static final HDFSFileService HDFS = new HDFSFileService();
 	// experiments log
-	private static List<String> log = new LinkedList<String>();
-	// experiment output file name
-	private static final String FILE_NAME = "experiments-mem-random-" + K;// + "-" + TIME_WINDOW_SIZE + "s";
-	// time to run queries
-	private static long selecQueryTime=0;
-	private static long nnQueryTime=0;
-	
+	private static final StringBuffer LOG = new StringBuffer();
+	// experiment LOG file name
+	private static final String FILE_NAME = 
+			"experiments-" + K + "-" + TIME_WINDOW_SIZE + "s";
+
 	/**
 	 * Main
 	 */
 	public static void main(String[] args){
 		System.out.println();
 		System.out.println("Running Experiments..");
-		System.out.println();		
-		
+		System.out.println();
+			
 		/************************
 		 * DATA INDEXING 
 		 ************************/
@@ -72,8 +71,16 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 		TrajectoryTrackTable trajectoryTrackTable = 
 				partitioningService.getTrajectoryTrackTable();
 
+System.out.println("Num polygons: " + voronoiDiagram.value().size());
+System.out.println("Num pages: " + voronoiPagesRDD.count());
+System.out.println("Num TTT tuples: " + trajectoryTrackTable.count());
+
+/*		// save the index structure
+ 		voronoiPagesRDD.save(LOCAL_PATH + "/index-structure-1");
+		trajectoryTrackTable.save(LOCAL_PATH + "/index-structure-1");
+		
 		// save information regarding indexing
-/*		voronoiPagesRDD.savePagesInfo();
+		voronoiPagesRDD.savePagesInfo();
 		voronoiPagesRDD.savePagesHistory();
 		trajectoryTrackTable.saveTableInfo();
 */
@@ -82,67 +89,63 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 		 ************************/
 		QueryProcessingService queryService = new QueryProcessingService(
 				voronoiPagesRDD, trajectoryTrackTable, voronoiDiagram); 
-		// trajectories returned from the query
-		List<Trajectory> queryResult;
-		List<NearNeighbor> nnResult;
-		int numTrajectories;
 		
-		/******
-		 * USE CASES
-		 ******/
-		List<STObject> stUseCases = readSpatialTemporalUseCases();
-		List<Trajectory> nnUseCases = readNearestNeighborUseCases();
-		
-		/******
-		 * SPATIAL TEMPORAL SELECTION QUERIES
-		 ******/
-		{
-			log.add("Spatial-Temporal Selection Query Result:\n");
-			int i=1;
-			for(STObject stObj : stUseCases){//int j=0; j<30; j++){//
-				//STObject stObj = stUseCases.get(j);
-				long start = System.currentTimeMillis();
-				// run query
-				queryResult = queryService
-						.getSpatialTemporalSelection(stObj.region, stObj.timeIni, stObj.timeEnd, true);
-				numTrajectories = queryResult.size();
-
-				long time = System.currentTimeMillis()-start;
-				log.add("Query " + i++ + ": " + numTrajectories + " trajectories in " + time + " ms.");
-				selecQueryTime += time;
-			}
-			log.add("\nSpatial-Temporal Selection ends at: " + System.currentTimeMillis() + "ms.");
-			log.add("Total Spatial-Temporal Selection Query Time: " + selecQueryTime + " ms.");
-		} 
-
 		/******
 		 * K-NN QUERIES
 		 ******/
+/*		List<Trajectory> nnUseCases = readNearestNeighborUseCases();
 		{
-			log.add("\nKNN Query Result:\n");
-			int i=1;
-			final int k = 10; 
-			for(Trajectory t : nnUseCases){//int j=0; j<10; j++){//
-				//Trajectory t = nnUseCases.get(j);
+			LOG.append("NN Query Result:\n\n");
+			long nnQueryTime=0;
+			int queryId=1;
+			//int k = 10;
+			for(Trajectory t : nnUseCases){
+				System.out.println("Query " + queryId);
 				long start = System.currentTimeMillis();				
 				// run query
 				long tIni = t.timeIni();
 				long tEnd = t.timeEnd();
-				nnResult = queryService
-						.getKNearestNeighbors(t, tIni, tEnd, k);
-				numTrajectories = nnResult.size();
-				
-				long time = System.currentTimeMillis()-start;
-				log.add("NN Query " + i++ + ": " + numTrajectories + " trajectories in " + time + " ms.");
-				nnQueryTime += time;
+				Trajectory result = queryService
+						.getNearestNeighbor(t, tIni, tEnd);
+				if(result != null){	
+					System.out.println("NN retornou: " + result.id);
+						long time = System.currentTimeMillis() - start;
+						LOG.append("NN Query " + queryId++ + ": " +  result.id + " in " + time + " ms.\n");
+						nnQueryTime += time;
 				}
-			log.add("\nNN query ends at: " + System.currentTimeMillis() + "ms.");
-			log.add("Total K-NN Time: " + nnQueryTime + " ms.");
+			}
+			LOG.append("\nNN query ends at: " + System.currentTimeMillis() + "ms.");
+			LOG.append("\nTotal NN Time: " + nnQueryTime + " ms.");
+		}
+
+		/******
+		 * SPATIAL TEMPORAL SELECTION QUERIES
+		 ******/
+		List<STObject> stUseCases = readSpatialTemporalUseCases();
+		{
+			LOG.append("Spatial-Temporal Selection Query Result:\n\n");
+			long selecQueryTime=0;
+			int queryId=1;
+			for(STObject stObj : stUseCases){
+				System.out.println("Query " + queryId);
+				long start = System.currentTimeMillis();
+				// run query
+				List<Trajectory> result = queryService
+						.getSpatialTemporalSelection(stObj.region, stObj.timeIni, stObj.timeEnd, true);
+
+			long time = System.currentTimeMillis()-start;
+			LOG.append("Query " + queryId++ + ": " + result.size() + " trajectories in " + time + " ms.\n");
+			selecQueryTime += time;
+	
+System.out.println("res: " +result.size());
+			}
+			LOG.append("\nSpatial-Temporal Selection ends at: " + System.currentTimeMillis() + "ms.");
+			LOG.append("\nTotal Spatial-Temporal Selection Query Time: " + selecQueryTime + " ms.\n\n");
 		}
 
 		// save the result log to HDFS
-		hdfs.saveStringListHDFS(log, FILE_NAME);
-		
+		HDFS.saveLogFileHDFS(LOG, FILE_NAME);
+	
 		// unpersist
 		voronoiPagesRDD.unpersist();
 		trajectoryTrackTable.unpersist();
@@ -153,7 +156,7 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 	 */
 	public static List<TimeWindow> readTimeSliceUseCases(){
 		List<String> lines = 
-				hdfs.readFileHDFS("/spark-data/use-cases/time-slice-use-cases");
+				HDFS.readFileHDFS("/spark-data/use-cases/time-slice-use-cases");
 		// process lines
 		long timeIni, timeEnd;
 		List<TimeWindow> timeWindowList = new LinkedList<TimeWindow>(); 
@@ -174,7 +177,7 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 	 */
 	public static List<Box> readSpatialUseCases(){
 		List<String> lines = 
-				hdfs.readFileHDFS("/spark-data/use-cases/spatial-use-cases");
+				HDFS.readFileHDFS("/spark-data/use-cases/spatial-use-cases");
 		// process lines
 		double left, right, bottom, top;
 		List<Box> boxList = new LinkedList<Box>(); 
@@ -197,7 +200,7 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 	 */
 	public static List<STObject> readSpatialTemporalUseCases(){
 		List<String> lines = 
-				hdfs.readFileHDFS("/spark-data/use-cases/spatial-temporal-use-cases");
+				HDFS.readFileHDFS("/spark-data/use-cases/spatial-temporal-use-cases");
 		// process lines
 		long timeIni, timeEnd;
 		double left, right, bottom, top;
@@ -223,7 +226,7 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 	 */
 	public static List<Trajectory> readNearestNeighborUseCases(){
 		List<String> lines = 
-				hdfs.readFileHDFS("/spark-data/use-cases/nn-use-cases");
+				HDFS.readFileHDFS("/spark-data/use-cases/nn-use-cases");
 		// process lines
 		int id=1;
 		double x, y;
@@ -332,7 +335,7 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 						return line;
 					}
 				}).collect();
-			hdfs.saveStringListHDFS(newLines, fileName + "-2");	
+			HDFS.saveStringListHDFS(newLines, fileName + "-2");	
 			
 			newLines = 
 				fileRDD.map(new Function<String, String>() {
@@ -342,7 +345,7 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 						return line;
 					}
 				}).collect();
-			hdfs.saveStringListHDFS(newLines, fileName + "-3");
+			HDFS.saveStringListHDFS(newLines, fileName + "-3");
 			
 			newLines = 
 				fileRDD.map(new Function<String, String>() {
@@ -352,7 +355,7 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 						return line;
 					}
 				}).collect();
-			hdfs.saveStringListHDFS(newLines, fileName + "-4");
+			HDFS.saveStringListHDFS(newLines, fileName + "-4");
 			
 			newLines = 
 					fileRDD.map(new Function<String, String>() {
@@ -362,7 +365,7 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 							return line;
 						}
 					}).collect();
-			hdfs.saveStringListHDFS(newLines, fileName + "-5");		
+			HDFS.saveStringListHDFS(newLines, fileName + "-5");		
 			
 			newLines = 
 					fileRDD.map(new Function<String, String>() {
@@ -372,7 +375,7 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 							return line;
 						}
 					}).collect();
-			hdfs.saveStringListHDFS(newLines, fileName + "-6");		
+			HDFS.saveStringListHDFS(newLines, fileName + "-6");		
 			
 			newLines = 
 					fileRDD.map(new Function<String, String>() {
@@ -382,7 +385,7 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 							return line;
 						}
 					}).collect();
-			hdfs.saveStringListHDFS(newLines, fileName + "-7");	
+			HDFS.saveStringListHDFS(newLines, fileName + "-7");	
 				
 			newLines = 
 					fileRDD.map(new Function<String, String>() {
@@ -392,7 +395,33 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 							return line;
 						}
 					}).collect();
-			hdfs.saveStringListHDFS(newLines, fileName + "-8");		
+			HDFS.saveStringListHDFS(newLines, fileName + "-8");		
 	}
 
+	/**
+	 * Read the dataset from local file and sample
+	 * 16gb of data, save to HDFS.
+	 */
+	public static void reSample16(){
+		//for(int i=1; i<=4; i++){
+		String splitFolder = "/trajectory-data/split";
+		JavaRDD<String> fileRDD = SC.textFile("file:/media/bigdata/uqdalves/my-data" + splitFolder + "7," +
+				 							  "file:/media/bigdata/uqdalves/my-data" + splitFolder + "8").sample(false, 0.265);
+		
+		// map to trajectory object
+		FileToObjectRDDService rdd = new FileToObjectRDDService();
+		JavaRDD<Trajectory> trajectoryRDD = rdd.mapRawDataToTrajectoryMercRDD(fileRDD);
+		
+		// map to trajectory as string
+		JavaRDD<String> trajAsStringRDD = 
+			trajectoryRDD.map(new Function<Trajectory, String>() {
+				public String call(Trajectory t) throws Exception {
+					return t.toString();
+				}
+			});
+		
+		// save the RDD to HDFS
+		trajAsStringRDD.saveAsTextFile(HDFS_PATH + "/spark-data" + splitFolder + "4");
+		//}
+	}
 }

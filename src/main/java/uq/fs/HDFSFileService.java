@@ -14,10 +14,9 @@ import java.util.List;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.spark.api.java.JavaRDD;
 
 import uq.spark.SparkEnvInterface;
-import uq.spark.indexing.IndexParamInterface;
+import uq.spark.index.IndexParamInterface;
 import uq.spatial.Point;
 import uq.spatial.Trajectory;
 
@@ -37,14 +36,31 @@ public class HDFSFileService implements SparkEnvInterface, Serializable, IndexPa
 	private Configuration config = null;
 	
 	/**
-	 * Constructor, setup HDFS configuration
+	 * Constructor, setup HDFS configuration (standard access)
 	 */
 	public HDFSFileService() {
+		// standard configuration
 		config = new Configuration();
 		config.addResource(new Path(HADOOP_HOME + "/etc/hadoop/core-site.xml"));
 		config.addResource(new Path(HADOOP_HOME + "/etc/hadoop/hdfs-site.xml"));
 	}
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param config Hadoop access configuration
+	 */
+	public HDFSFileService(Configuration config) {
+		this.config = config;
+	}
+	
+	/**
+	 * Set Hadoop access configuration.
+	 */
+	public void setConf(Configuration config){
+		this.config = config;
+	}
+	
 	/**
 	 * Read pivots from HDFS file system.
 	 * Return a list of pivots (points).
@@ -94,7 +110,7 @@ public class HDFSFileService implements SparkEnvInterface, Serializable, IndexPa
 	 * @return Return a list of Stings with the file lines,
 	 * one line per String in the list.
 	 */
-	public List<String> readFileHDFS(String filePath){			
+	public List<String> readFileHDFS(final String filePath){			
 		// fields to be read from the file
 		try {
             FileSystem hdfs = FileSystem.get(config);
@@ -120,13 +136,12 @@ public class HDFSFileService implements SparkEnvInterface, Serializable, IndexPa
 	/**
 	 * Save this list of points to the HDFS /output folder.
 	 */
-	public void savePointListHDFS(List<Point> pointList, 
-			String fileName){
+	public void savePointListHDFS(
+			List<Point> pointList, 
+			final String fileName){
 		List<String> scriptList = new LinkedList<String>();
-		
-		String script;
 		for(Point p : pointList){
-			script = p.x + " " + p.y + " " + p.time;
+			String script = p.x + " " + p.y + " " + p.time;
 			scriptList.add(script);
 		}
 		// save to HDFS
@@ -136,15 +151,14 @@ public class HDFSFileService implements SparkEnvInterface, Serializable, IndexPa
 	/**
 	 * Save this list of trajectories to the HDFS /output folder.
 	 */
-	public void saveTrajectoryListHDFS(List<Trajectory> trajectoryList, 
-			String fileName){
+	public void saveTrajectoryListHDFS(
+			List<Trajectory> trajectoryList, 
+			final String fileName){
 		List<String> scriptList = new LinkedList<String>();
-		
-		String script = "";
 		for(Trajectory t : trajectoryList){
-			script += t.id;
+			String script = t.id;
 			for(Point p : t.getPointsList()){
-				script +=  " " + p.x + " " + p.y + " " + p.time;
+				script += " " + p.x + " " + p.y + " " + p.time;
 			}
 			scriptList.add(script);
 		}
@@ -160,7 +174,9 @@ public class HDFSFileService implements SparkEnvInterface, Serializable, IndexPa
 	 * @param listObj A list of object to save.
 	 * @param fileName Name of the file, with its extension.
 	 */
-	public void saveObjectListHDFS(List<Object> listObj, String fileName){
+	public void saveObjectListHDFS(
+			List<Object> listObj, 
+			final String fileName){
 		List<String> scriptList = new LinkedList<String>();
 		for(Object obj : listObj){
 			scriptList.add(obj.toString());
@@ -176,7 +192,9 @@ public class HDFSFileService implements SparkEnvInterface, Serializable, IndexPa
 	 * @param listObj A list of Strings to save.
 	 * @param fileName Name of the file, with its extension.
 	 */
-	public void saveStringListHDFS(List<String> stringList, String fileName){
+	public void saveStringListHDFS(
+			List<String> stringList, 
+			final String fileName){
 		String name = fileName;
         try {
 			Path file = new Path(HDFS_PATH + HDFS_OUTPUT + name);
@@ -210,7 +228,9 @@ public class HDFSFileService implements SparkEnvInterface, Serializable, IndexPa
 	 * @param scriptBuffer The buffer with the content of the file.
 	 * @param fileName Name of the file, with its extension.
 	 */
-	public void saveStringBufferHDFS(StringBuffer scriptBuffer, String fileName) {
+	public void saveStringBufferHDFS(
+			StringBuffer scriptBuffer, 
+			final String fileName) {
 		String name = fileName;
 		try {
 			FileSystem fs = FileSystem.get(new URI(HDFS_PATH), config);
@@ -237,33 +257,28 @@ public class HDFSFileService implements SparkEnvInterface, Serializable, IndexPa
 	/**
 	 * Save the application log file to the HDFS folder.
 	 * If the file already exists, then save as 
-	 * 'AppName-log-1', 'AppName-log-2', and so on.
-	 * 
-	 * @param logList The content of the log file.
+	 * 'fileName-log-1', 'fileName-log-2', and so on. 
 	 */
-	public void saveLogFileHDFS(List<String> logList, String appName){
-		String baseName = appName + "-log";
+	public void saveLogFileHDFS(
+			StringBuffer log, 
+			final String fileName){
+		String baseName = fileName + "-log";
 		String name = baseName;
         try {
         	Path file = new Path(HDFS_PATH + APP_LOG + name);
         	FileSystem fs = FileSystem.get(new URI(HDFS_PATH), config);
-
         	int i = 1;
 			while(fs.isFile(file)){
 				name = baseName + "-" + i++;
 				file = new Path(HDFS_PATH + APP_LOG + name);
 			}
-
 			BufferedWriter writer =
 					new BufferedWriter(new OutputStreamWriter(fs.create(file,true)));
-			//FSDataOutputStream out = fs.create(file);
-			for(String record : logList){
-				writer.write(record + "\n");
-			}
+			writer.write(log.toString());
 			writer.close();
-			System.out.println("File '" + APP_LOG + name + "' successfully saved to HDFS."); 
+			System.out.println("Log file '" + APP_LOG + name + "' successfully saved to HDFS."); 
 	    } catch(Exception e){
-	    	System.out.println("ERROR when writing '" + name + "' to HDFS.");
+	    	System.out.println("ERROR when writing log file '" + name + "' to HDFS.");
 	        e.printStackTrace();
 	    }   
 	}
@@ -276,7 +291,9 @@ public class HDFSFileService implements SparkEnvInterface, Serializable, IndexPa
 	 * @param script The content of the file
 	 * @param fileName Name of the file, with its extension.
 	 */
-	public void saveFileHDFS(String script, String fileName){        
+	public void saveFileHDFS(
+			final String script, 
+			final String fileName){        
 		String name = fileName;
 		try {
 			FileSystem fs = FileSystem.get(new URI(HDFS_PATH), config);
@@ -298,32 +315,5 @@ public class HDFSFileService implements SparkEnvInterface, Serializable, IndexPa
 	    	System.out.println("ERROR when writing '" + name + "' to HDFS.");
 	        e.printStackTrace();
 	    }
-	}
-
-	/**
-	 * Save this RDD to the HDFS output folder.
-	 * 
-	 * @param infoRDD The RDD with the file content.
-	 * @param fileName The file name.
-	 */
-	public void saveRDDToHDFS(JavaRDD<String> infoRDD, String fileName) {
-		String name = fileName;
-		try {
-			FileSystem fs = FileSystem.get(new URI(HDFS_PATH), config);
-			Path file = new Path(HDFS_PATH + HDFS_OUTPUT + name);
-			
-			int i = 1;
-			while(fs.isFile(file)){
-				name = fileName + "-" + i++;
-				file = new Path(HDFS_PATH + HDFS_OUTPUT + name);
-			}
-			
-			// save the RDD
-			infoRDD.saveAsTextFile(HDFS_PATH + HDFS_OUTPUT + name);
-		}catch(Exception e){
-	    	System.out.println("ERROR when writing '" + name + "' to HDFS.");
-	        e.printStackTrace();
-	    }
-		
 	}
 }

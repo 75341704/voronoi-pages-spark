@@ -3,7 +3,7 @@ package uq.spark;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.storage.StorageLevel;
 
-import uq.spark.indexing.IndexParamInterface;
+import uq.spark.index.IndexParamInterface;
 
 /**
  * Environment interface.
@@ -19,8 +19,7 @@ public interface SparkEnvInterface extends IndexParamInterface {
 	
 	// path to HDFS
 	static final String HDFS_PATH =
-			//"hdfs://master:54310";  // Cluster
-			"hdfs://localhost:9000";  // Local
+			"hdfs://localhost:9000";
 	
 	// path to Tachyon memory storage
 	static final String TACHYON_PATH =
@@ -28,43 +27,30 @@ public interface SparkEnvInterface extends IndexParamInterface {
 	
 	// path to data locally
 	static final String LOCAL_PATH =
-			"file:/media/bigdata/uqdalves/my-data";
+			"file:/home/uqdalves/my-data";
 	
 	// path to the data set folders/files 
 	static final String DATA_PATH =
-			HDFS_PATH + "/spark-data/trajectory-data/sample-1gb";
-			// TACHYON_PATH + "/trajectory-data/sample-8gb";
+			//"file:/media/bigdata/uqdalves/my-data/trajectory-data/sample-4gb";
 			/*
 			TACHYON_PATH + "/trajectory-data/split1," + 
 			TACHYON_PATH + "/trajectory-data/split2," +
 			TACHYON_PATH + "/trajectory-data/split3," +
-			TACHYON_PATH + "/trajectory-data/split4," +
-			TACHYON_PATH + "/trajectory-data/split5," +
-			TACHYON_PATH + "/trajectory-data/split6," +
-			TACHYON_PATH + "/trajectory-data/split7," +
-			TACHYON_PATH + "/trajectory-data/split8";
+			TACHYON_PATH + "/trajectory-data/split4";
 			*//*
 			HDFS_PATH + "/spark-data/trajectory-data/split1," + 
 			HDFS_PATH + "/spark-data/trajectory-data/split2," +
 			HDFS_PATH + "/spark-data/trajectory-data/split3," +
-			HDFS_PATH + "/spark-data/trajectory-data/split4," +
-			HDFS_PATH + "/spark-data/trajectory-data/split5," +
-			HDFS_PATH + "/spark-data/trajectory-data/split6," +
-			HDFS_PATH + "/spark-data/trajectory-data/split7," +
-			HDFS_PATH + "/spark-data/trajectory-data/split8";
+			HDFS_PATH + "/spark-data/trajectory-data/split4";
 			*//*
 			LOCAL_PATH + "/trajectory-data/split1," + 
 			LOCAL_PATH + "/trajectory-data/split2," +
-			LOCAL_PATH + "/trajectory-data/split3," +
-			LOCAL_PATH + "/trajectory-data/split4," +
-			LOCAL_PATH + "/trajectory-data/split5," +
-			LOCAL_PATH + "/trajectory-data/split6," +
-			LOCAL_PATH + "/trajectory-data/split7," +
-			LOCAL_PATH + "/trajectory-data/split8";*/
+			LOCAL_PATH + "/trajectory-data/split3," +*/
+			LOCAL_PATH + "/trajectory-data/split4";
 	
 	// path to pivots file inside HDFS
 	static final String PIVOTS_PATH = 
-			"/spark-data/pivots/mercator/1g-pivots-random-" + K + ".txt";
+			"/spark-data/pivots/mercator/16g-pivots-kmeans-approx-" + K + ".txt";
 	
 	// path to output folder inside HDFS
 	static final String HDFS_OUTPUT = 
@@ -80,7 +66,7 @@ public interface SparkEnvInterface extends IndexParamInterface {
 			"/home/uqdalves/hadoop/hadoop-2.7.1";  // Local
 	
 	// the min number of partitions of the input
-	static final int NUM_PARTITIONS_DATA = 125; // number of data blocks
+	static final int NUM_PARTITIONS_DATA = 60; // number of data blocks
 		
 	// number of reduce tasks for the indexing process
 	static final int NUM_PARTITIONS_PAGES = 4 * NUM_PARTITIONS_DATA;

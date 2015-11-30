@@ -13,19 +13,23 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Scanner;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import junit.framework.TestCase;
+import net.sf.jsi.Rectangle;
 import uq.fs.LocalFileService;
-import uq.spark.indexing.PageIndex;
-import uq.spark.indexing.TrajectoryTrackTable;
+import uq.spark.index.Page;
+import uq.spark.index.PageIndex;
+import uq.spark.index.TrajectoryTrackTable;
 import uq.spark.query.QueryProcessingService;
 import uq.spark.query.SelectionQuery;
 import uq.spatial.Box;
 import uq.spatial.Point;
 import uq.spatial.PointComparator;
 import uq.spatial.Trajectory;
+import uq.spatial.TrajectoryRTree;
 import uq.spatial.clustering.PartitioningAroundMedoids;
 import uq.spatial.distance.DistanceService;
 import uq.spatial.transformation.ProjectionTransformation;
@@ -519,8 +523,58 @@ public class LocalTestService  extends TestCase {
 			}
 		}
 		q1.print();
-*/
-		convertToMercator();
+
+		String s = "(117,1189905,T_10000018_1427884720_15936251155122583926 516.7622983162232 224.76965756991802 1427884781 516.7493997047326 224.78549471439976 1427884850 516.7482877554661 224.78525833812822 1427884862 516.7518459931188 224.7798216920864 1427884867 516.7559602054046 224.77485781160448 1427884872 516.759852027837 224.7703666929374 1427884876 516.7638550451964 224.7658755849985 1427884880 516.7687476219687 224.76138448778727 1427884884 516.7719722748415 224.75677521496192 1427884889 516.7681916473355 224.75098409332634 1427884895 516.7638550451964 224.74542936076122 1427884899 516.7592960532038 224.73999282988464 1427884903 516.755515425698 224.73408357502055 1427884907 516.7531803322383 224.7291198152854 1427884910 516.7514012134121 224.7236833315619 1427884913 516.7481765605394 224.71682865709454 1427884916 516.7453966873734 224.71127402542206 1427884919 516.7415048649408 224.7057194101559 1427884922 516.7369458729484 224.70087390810912 1427884925 516.7326092708093 224.6954375060395 1427884928 516.72827266867 224.68988293754663 1427884931 516.7243808462375 224.6850374763011 1427884933 516.7199330491717 224.67936475704616 1427884936 516.715485252106 224.67416477942626 1427884939 516.7112598448936 224.66967390123247 1427884942 516.7074792173876 224.66530121434675 1427884945 516.7019194710552 224.6588012931676 1427884949)";
+		String[] tokens = s.split("\\(+|\\s|,|\\)");
+		
+		for(String a : tokens){
+			System.out.println(a);
+		}*/
+		Trajectory t1 = new Trajectory("T1");
+		t1.addPoint( new Point(0,0) );
+		t1.addPoint( new Point(1,1) );
+		t1.addPoint( new Point(2,0) );
+		t1.addPoint( new Point(3,1) );
+		
+		Trajectory t2 = new Trajectory("T2");
+		t2.addPoint( new Point(0,0) );
+		t2.addPoint( new Point(1,1) );
+		t2.addPoint( new Point(2,0) );
+		t2.addPoint( new Point(3,1) );
+		t2.addPoint( new Point(4,1) );
+		
+		Trajectory t3 = new Trajectory("T3");
+		t3.addPoint( new Point(0,10) );
+		t3.addPoint( new Point(1,11) );
+		t3.addPoint( new Point(2,10) );
+		t3.addPoint( new Point(3,11) );
+		
+		Trajectory t4 = new Trajectory("T4");
+		t4.addPoint( new Point(0,0) );
+		t4.addPoint( new Point(3,11) );
+/*
+		TrajectoryRTree tree = new TrajectoryRTree();
+		tree.add(t1);
+		tree.add(t2);
+		tree.add(t3);
+		tree.add(t4);
+	*/
+System.out.println("T1 BOX:");	
+t1.mbr().print();
+System.out.println("\nT1 Rectangle:");
+Rectangle r = t1.mbr().rectangle();
+System.out.println("("+r.minX+", "+r.maxY+") " + " ("+r.maxX+", "+r.maxY+")");
+System.out.println("("+r.minX+", "+r.minY+") " + " ("+r.maxX+", "+r.minY+")");
+		
+/*		
+		Box region = new Box(0, 5, 5, 8);
+		List<Trajectory> list = tree.getTrajectoriesByMBR(region);//getKNearest(region, 10);//TrajectoriesInRange(region);
+
+		System.out.println("In the box");
+		for(Trajectory t : list){
+			System.out.println(t.id);
+		}
+		*/
 	}
 	
 	/**
@@ -668,16 +722,18 @@ public class LocalTestService  extends TestCase {
 	
 			String script="";
 			
+			// 1000 inputs
 			for(int l=1; l<=10; l++){
+			
 			// 0.01
 			for(int i=1; i<=5; i++) {
 				line = buffer.readLine();
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) + 0.2;
+				double x2 = Double.parseDouble(tokens[0]) + 0.1;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) + 0.2;
+				double y2 = Double.parseDouble(tokens[1]) + 0.15;
 				long t1 = Long.parseLong(tokens[2]);
 				long t2 = Long.parseLong(tokens[2]) + 7200;
 				
@@ -690,9 +746,9 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) - 0.2;
+				double x2 = Double.parseDouble(tokens[0]) - 0.1;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) - 0.2;
+				double y2 = Double.parseDouble(tokens[1]) - 0.15;
 				long t1 = Long.parseLong(tokens[2]);
 				long t2 = Long.parseLong(tokens[2]) + 1200;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
@@ -704,9 +760,9 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) + 0.2;
+				double x2 = Double.parseDouble(tokens[0]) + 0.1;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) - 0.2;
+				double y2 = Double.parseDouble(tokens[1]) - 0.15;
 				long t1 = Long.parseLong(tokens[2]);
 				long t2 = Long.parseLong(tokens[2]) + 2400;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
@@ -718,9 +774,9 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) - 0.2;
+				double x2 = Double.parseDouble(tokens[0]) - 0.1;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) + 0.2;
+				double y2 = Double.parseDouble(tokens[1]) + 0.15;
 				long t1 = Long.parseLong(tokens[2]);
 				long t2 = Long.parseLong(tokens[2]) + 3600;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
@@ -734,9 +790,9 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) + 0.3;
+				double x2 = Double.parseDouble(tokens[0]) + 0.35;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) + 0.3;
+				double y2 = Double.parseDouble(tokens[1]) + 0.35;
 				long t1 = Long.parseLong(tokens[2]);
 				long t2 = Long.parseLong(tokens[2]) + 7200;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
@@ -748,9 +804,9 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) - 0.3;
+				double x2 = Double.parseDouble(tokens[0]) - 0.35;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) - 0.3;
+				double y2 = Double.parseDouble(tokens[1]) - 0.35;
 				long t1 = Long.parseLong(tokens[2]);
 				long t2 = Long.parseLong(tokens[2]) + 1200;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
@@ -762,9 +818,9 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) + 0.3;
+				double x2 = Double.parseDouble(tokens[0]) + 0.35;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) - 0.3;
+				double y2 = Double.parseDouble(tokens[1]) - 0.35;
 				long t1 = Long.parseLong(tokens[2]);
 				long t2 = Long.parseLong(tokens[2]) + 2400;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
@@ -776,9 +832,9 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) - 0.3;
+				double x2 = Double.parseDouble(tokens[0]) - 0.35;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) + 0.3;
+				double y2 = Double.parseDouble(tokens[1]) + 0.35;
 				long t1 = Long.parseLong(tokens[2]);
 				long t2 = Long.parseLong(tokens[2]) + 3600;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
@@ -792,9 +848,9 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) + 0.5;
+				double x2 = Double.parseDouble(tokens[0]) + 0.55;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) + 0.5;
+				double y2 = Double.parseDouble(tokens[1]) + 0.55;
 				long t1 = Long.parseLong(tokens[2]);
 				long t2 = Long.parseLong(tokens[2]) + 7200;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
@@ -806,9 +862,9 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) - 0.5;
+				double x2 = Double.parseDouble(tokens[0]) - 0.55;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) - 0.5;
+				double y2 = Double.parseDouble(tokens[1]) - 0.55;
 				long t1 = Long.parseLong(tokens[2]);
 				long t2 = Long.parseLong(tokens[2]) + 1200;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
@@ -820,9 +876,9 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) + 0.5;
+				double x2 = Double.parseDouble(tokens[0]) + 0.55;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) - 0.5;
+				double y2 = Double.parseDouble(tokens[1]) - 0.55;
 				long t1 = Long.parseLong(tokens[2]);
 				long t2 = Long.parseLong(tokens[2]) + 2400;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
@@ -834,9 +890,9 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) - 0.5;
+				double x2 = Double.parseDouble(tokens[0]) - 0.55;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) + 0.5;
+				double y2 = Double.parseDouble(tokens[1]) + 0.55;
 				long t1 = Long.parseLong(tokens[2]);
 				long t2 = Long.parseLong(tokens[2]) + 3600;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
@@ -850,11 +906,11 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) + 0.7;
+				double x2 = Double.parseDouble(tokens[0]) + 0.75;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) + 0.7;
+				double y2 = Double.parseDouble(tokens[1]) + 0.80;
 				long t1 = Long.parseLong(tokens[2]);
-				long t2 = Long.parseLong(tokens[2]) + 7200;
+				long t2 = Long.parseLong(tokens[2]) + 600;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
 				System.out.format("%.5f %.5f %.5f %.5f",x1,x2,y1,y2);
 				System.out.println(" " + t1 + " " + t2);
@@ -864,9 +920,9 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) - 0.7;
+				double x2 = Double.parseDouble(tokens[0]) - 0.75;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) - 0.7;
+				double y2 = Double.parseDouble(tokens[1]) - 0.80;
 				long t1 = Long.parseLong(tokens[2]);
 				long t2 = Long.parseLong(tokens[2]) + 1200;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
@@ -878,11 +934,11 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) + 0.7;
+				double x2 = Double.parseDouble(tokens[0]) + 0.75;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) - 0.7;
+				double y2 = Double.parseDouble(tokens[1]) - 0.80;
 				long t1 = Long.parseLong(tokens[2]);
-				long t2 = Long.parseLong(tokens[2]) + 2400;
+				long t2 = Long.parseLong(tokens[2]) + 1200;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
 				System.out.format("%.5f %.5f %.5f %.5f",x1,x2,y1,y2);
 				System.out.println(" " + t1 + " " + t2);
@@ -892,11 +948,11 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) - 0.7;
+				double x2 = Double.parseDouble(tokens[0]) - 0.75;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) + 0.7;
+				double y2 = Double.parseDouble(tokens[1]) + 0.80;
 				long t1 = Long.parseLong(tokens[2]);
-				long t2 = Long.parseLong(tokens[2]) + 3600;
+				long t2 = Long.parseLong(tokens[2]) + 2400;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
 				System.out.format("%.5f %.5f %.5f %.5f",x1,x2,y1,y2);
 				System.out.println(" " + t1 + " " + t2);
@@ -908,11 +964,11 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) + 1.0;
+				double x2 = Double.parseDouble(tokens[0]) + 1.1;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) + 1.0;
+				double y2 = Double.parseDouble(tokens[1]) + 1.15;
 				long t1 = Long.parseLong(tokens[2]);
-				long t2 = Long.parseLong(tokens[2]) + 7200;
+				long t2 = Long.parseLong(tokens[2]) + 600;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
 				System.out.format("%.5f %.5f %.5f %.5f",x1,x2,y1,y2);
 				System.out.println(" " + t1 + " " + t2);
@@ -922,9 +978,9 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) - 1.0;
+				double x2 = Double.parseDouble(tokens[0]) - 1.1;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) - 1.0;
+				double y2 = Double.parseDouble(tokens[1]) - 1.15;
 				long t1 = Long.parseLong(tokens[2]);
 				long t2 = Long.parseLong(tokens[2]) + 1200;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
@@ -936,11 +992,11 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) + 1.0;
+				double x2 = Double.parseDouble(tokens[0]) + 1.1;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) - 1.0;
+				double y2 = Double.parseDouble(tokens[1]) - 1.15;
 				long t1 = Long.parseLong(tokens[2]);
-				long t2 = Long.parseLong(tokens[2]) + 2400;
+				long t2 = Long.parseLong(tokens[2]) + 600;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
 				System.out.format("%.5f %.5f %.5f %.5f",x1,x2,y1,y2);
 				System.out.println(" " + t1 + " " + t2);
@@ -950,11 +1006,11 @@ public class LocalTestService  extends TestCase {
 				String[] tokens = line.split(" ");
 				
 				double x1 = Double.parseDouble(tokens[0]);
-				double x2 = Double.parseDouble(tokens[0]) - 1.0;
+				double x2 = Double.parseDouble(tokens[0]) - 1.1;
 				double y1 = Double.parseDouble(tokens[1]);
-				double y2 = Double.parseDouble(tokens[1]) + 1.0;
+				double y2 = Double.parseDouble(tokens[1]) + 1.15;
 				long t1 = Long.parseLong(tokens[2]);
-				long t2 = Long.parseLong(tokens[2]) + 3600;
+				long t2 = Long.parseLong(tokens[2]) + 1200;
 				script += x1 + " " + x2 + " " + y1 + " " + y2 + " " + t1 + " " + t2 +"\n";
 				System.out.format("%.5f %.5f %.5f %.5f",x1,x2,y1,y2);
 				System.out.println(" " + t1 + " " + t2);

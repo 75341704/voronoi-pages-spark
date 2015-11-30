@@ -68,31 +68,22 @@ public class ProjectionTransformation implements Serializable, GeoInterface {
 	
 	public static void main(String [] a){
 		double[] 
-		b = getMercatorProjection(105.80204, 0.12783);
+		b = getMercatorProjection(180.00, 30.00);
 		System.out.println(b[0]  + "  " + b[1]);
 		
-		b = getMercatorProjection(107.22343, 27.89323);
+		b = getMercatorProjection(180.01, 30.01);
 		System.out.println(b[0]  + "  " + b[1]);
 		
-		b = getMercatorProjection(108.97939, 31.62847);
+		b = getMercatorProjection(180.03, 30.03);
 		System.out.println(b[0]  + "  " + b[1]);
 		
-		b = getMercatorProjection(110.78873, 32.90354);
+		b = getMercatorProjection(180.05, 30.05);
 		System.out.println(b[0]  + "  " + b[1]);
 		
-		b = getMercatorProjection(111.28009, 34.0);
+		b = getMercatorProjection(180.07, 30.07);
 		System.out.println(b[0]  + "  " + b[1]);
 		
-		b = getMercatorProjection(113.68132, 35.05894);
-		System.out.println(b[0]  + "  " + b[1]);
-		
-		b = getMercatorProjection(117.24706, 38.0);
-		System.out.println(b[0]  + "  " + b[1]);
-		
-		b = getMercatorProjection(119.58125, 40.0);
-		System.out.println(b[0]  + "  " + b[1]);
-		
-		b = getMercatorProjection(120.93483, 50.0);
+		b = getMercatorProjection(180.10, 30.10);
 		System.out.println(b[0]  + "  " + b[1]);
 	}
 }

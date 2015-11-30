@@ -10,7 +10,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 
 import uq.spark.SparkEnvInterface;
-import uq.spark.indexing.IndexParamInterface;
+import uq.spark.index.IndexParamInterface;
 import uq.spatial.Point;
 
 /**

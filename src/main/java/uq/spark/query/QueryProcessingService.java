@@ -7,10 +7,10 @@ import java.util.List;
 
 import org.apache.spark.broadcast.Broadcast;
 
-import uq.spark.indexing.TrajectoryCollector;
-import uq.spark.indexing.TrajectoryTrackTable;
-import uq.spark.indexing.VoronoiDiagram;
-import uq.spark.indexing.VoronoiPagesRDD;
+import uq.spark.index.TrajectoryCollector;
+import uq.spark.index.TrajectoryTrackTable;
+import uq.spark.index.VoronoiDiagram;
+import uq.spark.index.VoronoiPagesRDD;
 import uq.spatial.Box;
 import uq.spatial.Trajectory;
 import uq.spatial.clustering.Cluster;
@@ -55,30 +55,24 @@ public class QueryProcessingService implements Serializable {
 	 * 
 	 * @param whole True if wants to return the whole trajectories.
 	 */
-	public List<Trajectory> getSpatialTemporalSelection(
+	public List<Trajectory> getSpatialTemporalSelection (
 			final Box region, 
 			final long t0, final long t1, 
 			final boolean whole){
-
 		System.out.println("\nRunning Spatial Temporal Selection Query..\n");
-
-		// sub-trajectories only
+		// query result
 		List<Trajectory> trajectoryList = new ArrayList<Trajectory>();
-		if(!whole){
-			List<SelectObject> resultList = // query result
+		if(whole){
+			// collect whole trajectories
+			List<String> resultIdList =
+					selectionQuery.runSpatialTemporalSelectionId(region, t0, t1);
+			trajectoryList = 
+					collector.collectTrajectoriesById(resultIdList).collect();
+		} else{
+			// sub-trajectories only
+			trajectoryList = 
 				selectionQuery.runSpatialTemporalSelection(region, t0, t1);
-			for(SelectObject obj : resultList){
-				trajectoryList.addAll(obj.getSubTrajectoryList());
-			}
-			return trajectoryList;
 		}
-		
-		// collect whole trajectories
-		List<String> resultIdList = // query result
-				selectionQuery.runSpatialTemporalSelectionId(region, t0, t1);
-		trajectoryList = 
-				collector.collectTrajectoriesById(resultIdList).collect();
-		
 		return trajectoryList;	
 	}
 	
@@ -91,26 +85,20 @@ public class QueryProcessingService implements Serializable {
 	public List<Trajectory> getSpatialSelection(
 			final Box region,
 			final boolean whole){
-
 		System.out.println("\nRunning Spatial Selection Query..\n");
-
-		// sub-trajectories only
+		// query result
 		List<Trajectory> trajectoryList = new ArrayList<Trajectory>();
-		if(!whole){
-			List<SelectObject> resultList = // query result
+		if(whole){
+			// collect whole trajectories
+			List<String> resultIdList =
+					selectionQuery.runSpatialSelectionId(region);
+			trajectoryList = 
+					collector.collectTrajectoriesById(resultIdList).collect();
+		} else{
+			// sub-trajectories only
+			trajectoryList = 
 					selectionQuery.runSpatialSelection(region);
-			for(SelectObject obj : resultList){
-				trajectoryList.addAll(obj.getSubTrajectoryList());
-			}
-			return trajectoryList;
 		}
-		
-		// collect whole trajectories
-		List<String> resultIdList = // query result
-				selectionQuery.runSpatialSelectionId(region);
-		trajectoryList = 
-				collector.collectTrajectoriesById(resultIdList).collect();
-		
 		return trajectoryList;
 	}
 	
@@ -124,58 +112,38 @@ public class QueryProcessingService implements Serializable {
 	public List<Trajectory> getTimeSlice(
 			final long t0, final long t1, 
 			final boolean whole){
-		
 		System.out.println("\nRunning Time Slice Query..\n");
-
-		// sub-trajectories only
+		// query result
 		List<Trajectory> trajectoryList = new ArrayList<Trajectory>();
-		if(!whole){
-			List<SelectObject> resultList =  // query result
-				selectionQuery.runTemporalSelection(t0, t1);
-			for(SelectObject obj : resultList){
-				trajectoryList.addAll(obj.getSubTrajectoryList());
-			}
-			return trajectoryList;
-		}
-		
-		// collect whole trajectories
-		List<String> resultIdList = // query result
-				selectionQuery.runTemporalSelectionId(t0, t1);
-		trajectoryList = 
+		if(whole){		
+			// collect whole trajectories
+			List<String> resultIdList = 
+					selectionQuery.runTemporalSelectionId(t0, t1);
+			trajectoryList = 
 				collector.collectTrajectoriesById(resultIdList).collect();
-
+		} else{
+			// sub-trajectories only
+			trajectoryList =
+				selectionQuery.runTemporalSelection(t0, t1);
+		}
 		return trajectoryList;	
 	}
 	
 	/**
 	 * Given a query trajectory Q, not necessarily in the data set, 
 	 * return all trajectories in the data set that crosses with Q.
-	 * 
-	 * @param whole True if wants to return the whole trajectories.
 	 */
 	public List<Trajectory> getCrossSelection(
-			final Trajectory q, 
-			final boolean whole){
+			final Trajectory q){
 		
 		System.out.println("\nRunning Cross Selection Query..\n");
-
-		// sub-trajectories only
+		// query result
 		List<Trajectory> trajectoryList = new ArrayList<Trajectory>();
-		if(!whole){
-			List<SelectObject> resultList = // query result
-				crossQuery.runCrossQuery(q);
-			for(SelectObject obj : resultList){
-				trajectoryList.addAll(obj.getSubTrajectoryList());
-			}		
-			return trajectoryList;
-		}
-		
 		// collect whole trajectories
-		List<String> resultIdList = // query result
+		List<String> resultIdList = 
 				crossQuery.runCrossQueryId(q);
 		trajectoryList = 
 				collector.collectTrajectoriesById(resultIdList).collect();
-
 		return trajectoryList;	
 	}	
 	
@@ -189,13 +157,10 @@ public class QueryProcessingService implements Serializable {
 	public Trajectory getNearestNeighbor(
 			final Trajectory q, 
 			final long t0, final long t1){
-
 		System.out.println("\nRunning NN Query..\n");
-		
 		// query result
 		NearNeighbor nnResult = 
 				nnQuery.runNearestNeighborQuery(q, t0, t1);
-
 		return nnResult;
 	}
 	
@@ -208,13 +173,10 @@ public class QueryProcessingService implements Serializable {
 			final Trajectory q, 
 			final long t0, final long t1, 
 			final int k){
-
 		System.out.println("\nRunning " + k + "-NN Query..\n");
-		
 		// query result
 		List<NearNeighbor> resultList = 
 				nnQuery.runKNearestNeighborsQuery(q, t0, t1, k);
-
 		return resultList;
 	}
 
@@ -226,9 +188,7 @@ public class QueryProcessingService implements Serializable {
 	public List<Trajectory> getReverseNearestNeighbors(
 			final Trajectory q, 
 			final long t0, final long t1){
-		
 		System.out.println("\nRunning Reverse NN Query..\n");
-
 		// query result
 		Iterator<Trajectory> resultItr = 
 				nnQuery.runReverseNearestNeighborsQuery(q, t0, t1);
@@ -237,7 +197,6 @@ public class QueryProcessingService implements Serializable {
 		while(resultItr.hasNext()){
 			rnnList.add(resultItr.next());
 		}
-		
 		return rnnList;		
 	}
 
@@ -261,13 +220,10 @@ public class QueryProcessingService implements Serializable {
 			final Box region, 
 			final double distanceThresold, 
 			final int minPoints){
-		
 		System.out.println("\nRunning Spatial Density Query..\n");
-		
 		// query result
 		List<Cluster> resultList = 
 				densityQuery.runDensityQuery(region, distanceThresold, minPoints);
-			
 		return resultList;	
 	}
 	
@@ -293,13 +249,10 @@ public class QueryProcessingService implements Serializable {
 			final long t0, final long t1,
 			final double distanceThresold, 
 			final int minPoints){
-		
 		System.out.println("\nRunning Spatial Temporal Density Query..\n");
-		
 		// query result
 		List<Cluster> resultList = 
 				densityQuery.runDensityQuery(region, t0, t1, distanceThresold, minPoints);
-			
 		return resultList;	
 	}
 

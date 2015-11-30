@@ -1,6 +1,11 @@
 package uq.spatial;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.io.Serializable;
+
+import org.apache.hadoop.io.Writable;
 
 import uq.spatial.distance.EuclideanDistanceCalculator;
 
@@ -12,7 +17,7 @@ import uq.spatial.distance.EuclideanDistanceCalculator;
  *
  */
 @SuppressWarnings("serial")
-public class Point implements Serializable, Cloneable {
+public class Point implements Serializable, Cloneable, Writable {
 	public double x;
 	public double y;
 	public long time;
@@ -65,7 +70,15 @@ public class Point implements Serializable, Cloneable {
 	public boolean isSamePosition(double x, double y){
 		return (x == this.x && y == this.y) ? true : false;
 	}
-
+	
+	/**
+	 * Print this point: System out.
+	 */
+	public void print(){
+		System.out.format("(%.3f,%.3f",x,y);
+		System.out.println("," + time + ")");
+	}
+	
 	/**
      * Makes an identical copy of this element.
      */
@@ -100,14 +113,20 @@ public class Point implements Serializable, Cloneable {
 
 	@Override
 	public String toString() {
-		return "(" + x + "," + y + "," + time + ")";
+		return  (x + " " + y + " " + time);
 	}
 
-	/**
-	 * Print this point: System out.
-	 */
-	public void print(){
-		System.out.format("(%.3f,%.3f",x,y);
-		System.out.println("," + time + ")");
+	public void readFields(DataInput in) throws IOException {
+		x = in.readDouble();
+		y = in.readDouble();
+		time = in.readLong();
+		pivotId = in.readInt();
+	}
+	
+	public void write(DataOutput out) throws IOException {
+		out.writeDouble(x);
+		out.writeDouble(y);
+		out.writeLong(time);
+		out.writeInt(pivotId);
 	}
 }

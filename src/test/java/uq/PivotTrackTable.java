@@ -9,7 +9,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 
 import uq.spark.MySparkContext;
-import uq.spark.indexing.Page;
+import uq.spark.index.Page;
 
 /**
  * Hash Map to keep track of Pivots within a RDD.

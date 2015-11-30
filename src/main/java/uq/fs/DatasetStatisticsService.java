@@ -7,7 +7,6 @@ import java.util.List;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
-import org.apache.spark.storage.StorageLevel;
 
 import uq.spark.SparkEnvInterface;
 import uq.spatial.Trajectory;
@@ -36,18 +35,21 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 	 */
 	public static long numTrajectoryPoints(JavaRDD<Trajectory> trajectoryRDD){
 		final long totalPoints = 
-			trajectoryRDD.map(new Function<Trajectory, Long>() {
+			trajectoryRDD.glom().map(new Function<List<Trajectory>, Long>() {
 				// map each trajectory to its size
-				public Long call(Trajectory trajectory) throws Exception {
-					return (long)trajectory.size();
+				public Long call(List<Trajectory> tList) throws Exception {
+					long sum=0;
+					for(Trajectory t : tList){
+						sum += t.size();
+					}
+					return sum;
 				}
 			}).reduce(new Function2<Long, Long, Long>() {
-				// sum the trajectory lengths
-				public Long call(Long size1, Long size2) throws Exception {
-					return (size1 + size2);
+				// sum the trajectory size
+				public Long call(Long v1, Long v2) throws Exception {
+					return (v1 + v2);
 				}
 			});
-
 		return totalPoints;
 	}
 	
@@ -61,15 +63,19 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 		// total trajectories in this dataset
 		final double numTrajectories = numTrajectories(trajectoryRDD);
 	
-		// get min, max and mean lenght of trajectories
+		// get mean, min and max length of trajectories
 		double[] lenghtVector = 
-			trajectoryRDD.map(new Function<Trajectory, double[]>() {
-					public double[] call(Trajectory t) throws Exception {
-						double[] vec = new double[3];
+			trajectoryRDD.glom().map(new Function<List<Trajectory>, double[]>() {
+				public double[] call(List<Trajectory> tList) throws Exception {
+					double[] vec = new double[]{0.0,Double.MAX_VALUE,0.0};
+					for(Trajectory t : tList){
 						double lenght = t.length();
-						vec[0] = lenght; vec[1] = lenght; vec[2] = lenght;
-						return vec;
+						vec[0] += lenght; 
+						vec[1] = Math.min(vec[1], lenght); 
+						vec[2] = Math.max(vec[2], lenght); ;
 					}
+					return vec;
+				}
 			}).reduce(new Function2<double[], double[], double[]>() {
 				public double[] call(double[] vec1, double[] vec2) throws Exception {
 					vec1[0] = vec1[0] + vec2[0];
@@ -78,6 +84,7 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 					return vec1;
 				}
 			});
+		// get mean
 		lenghtVector[0] = lenghtVector[0]/numTrajectories;
 
 		return lenghtVector;
@@ -93,15 +100,19 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 		// total trajectories in this dataset
 		final double numTrajectories = numTrajectories(trajectoryRDD);		
 
-		// get min, max and mean duration of trajectories
+		// get mean, min and max duration of trajectories
 		double[] durationVector = 
-			trajectoryRDD.map(new Function<Trajectory, double[]>() {
-					public double[] call(Trajectory t) throws Exception {
-						double[] vec = new double[3];
+			trajectoryRDD.glom().map(new Function<List<Trajectory>, double[]>() {
+				public double[] call(List<Trajectory> tList) throws Exception {
+					double[] vec = new double[]{0.0,Double.MAX_VALUE,0.0};
+					for(Trajectory t : tList){
 						double duration = t.duration();
-						vec[0] = duration; vec[1] = duration; vec[2] = duration;
-						return vec;
+						vec[0] += duration; 
+						vec[1] = Math.min(vec[1], duration); 
+						vec[2] = Math.max(vec[2], duration); ;
 					}
+					return vec;
+				}
 			}).reduce(new Function2<double[], double[], double[]>() {
 				public double[] call(double[] vec1, double[] vec2) throws Exception {
 					vec1[0] = vec1[0] + vec2[0];
@@ -110,6 +121,7 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 					return vec1;
 				}
 			});
+		// get mean
 		durationVector[0] = durationVector[0]/numTrajectories;
 
 		return durationVector;
@@ -125,15 +137,19 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 		// total trajectories in this dataset
 		final double numTrajectories = numTrajectories(trajectoryRDD);
 
-		// get min, max and mean speed of trajectories
+		// get mean, min and max speed of trajectories
 		double[] speedVector = 
-			trajectoryRDD.map(new Function<Trajectory, double[]>() {
-					public double[] call(Trajectory t) throws Exception {
-						double[] vec = new double[3];
+			trajectoryRDD.glom().map(new Function<List<Trajectory>, double[]>() {
+				public double[] call(List<Trajectory> tList) throws Exception {
+					double[] vec = new double[]{0.0,Double.MAX_VALUE,0.0};
+					for(Trajectory t : tList){
 						double speed = t.speed();
-						vec[0] = speed; vec[1] = speed; vec[2] = speed;
-						return vec;
+						vec[0] += speed; 
+						vec[1] = Math.min(vec[1], speed); 
+						vec[2] = Math.max(vec[2], speed);
 					}
+					return vec;
+				}
 			}).reduce(new Function2<double[], double[], double[]>() {
 				public double[] call(double[] vec1, double[] vec2) throws Exception {
 					vec1[0] = vec1[0] + vec2[0];
@@ -142,6 +158,7 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 					return vec1;
 				}
 			});
+		// get mean
 		speedVector[0] = speedVector[0]/numTrajectories;
 
 		return speedVector;
@@ -157,15 +174,19 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 		// total trajectories in this dataset
 		final double numTrajectories = numTrajectories(trajectoryRDD);
 		
-		// get min, max and mean sampling rates
+		// get mean, min and max sampling rates
 		double[] rateVector =
-			trajectoryRDD.map(new Function<Trajectory, double[]>() {
-					public double[] call(Trajectory t) throws Exception {
-						double[] vec = new double[3];
+			trajectoryRDD.glom().map(new Function<List<Trajectory>, double[]>() {
+				public double[] call(List<Trajectory> tList) throws Exception {
+					double[] vec = new double[]{0.0,Double.MAX_VALUE,0.0};
+					for(Trajectory t : tList){
 						double rate = t.samplingRate();
-						vec[0] = rate; vec[1] = rate; vec[2] = rate;
-						return vec;
+						vec[0] += rate; 
+						vec[1] = Math.min(vec[1], rate); 
+						vec[2] = Math.max(vec[2], rate);
 					}
+					return vec;
+				}
 			}).reduce(new Function2<double[], double[], double[]>() {
 				public double[] call(double[] vec1, double[] vec2) throws Exception {
 					vec1[0] = vec1[0] + vec2[0];
@@ -174,6 +195,7 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 					return vec1;
 				}
 			});
+		// get mean
 		rateVector[0] = rateVector[0]/numTrajectories;
 
 		return rateVector;
@@ -190,15 +212,20 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 		// total trajectories in this dataset
 		final double numTrajectories = numTrajectories(trajectoryRDD);
 
-		// get min, max and mean number of points 
+		// get mean, min and max number of points 
 		double[] numPtsVector = 
-			trajectoryRDD.map(new Function<Trajectory, double[]>() {
-					public double[] call(Trajectory t) throws Exception {
-						double[] vec = new double[3];
+			trajectoryRDD.glom().map(new Function<List<Trajectory>, double[]>() {
+
+				public double[] call(List<Trajectory> tList) throws Exception {
+					double[] vec = new double[]{0.0,Double.MAX_VALUE,0.0};
+					for(Trajectory t : tList){
 						double numPts = t.size();
-						vec[0] = numPts; vec[1] = numPts; vec[2] = numPts;
-						return vec;
+						vec[0] += numPts; 
+						vec[1] = Math.min(vec[1], numPts); 
+						vec[2] = Math.max(vec[2], numPts);
 					}
+					return vec;
+				}
 			}).reduce(new Function2<double[], double[], double[]>() {
 				public double[] call(double[] vec1, double[] vec2) throws Exception {
 					vec1[0] = vec1[0] + vec2[0];
@@ -207,6 +234,7 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 					return vec1;
 				}
 			});
+		//get mean
 		numPtsVector[0] = numPtsVector[0]/numTrajectories;
 
 		return numPtsVector;
@@ -279,7 +307,6 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 		};
 		Function2<List<String>, List<String>, List<String>> combOp = 
 				new Function2<List<String>, List<String>, List<String>>() {
-			
 			public List<String> call(List<String> list1, List<String> list2) throws Exception {
 				list1.addAll(list2);
 				return list1;
@@ -300,11 +327,11 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 	 */
 	public static void main(String[] arg0){
 		System.out.println();
-		System.out.println("Running Dataset Statistics Service..\n");
+		System.out.println("Running Dataset Statistics..\n");
 		
     	// read trajectory data files
      	JavaRDD<String> fileRDD = SC.textFile(DATA_PATH);
-     	fileRDD.persist(StorageLevel.MEMORY_AND_DISK());
+     	//fileRDD.persist(StorageLevel.MEMORY_AND_DISK());
      	
      	// convert the input dataset to trajectory objects (read the dataset in lat/lon)
      	FileToObjectRDDService rddService = new FileToObjectRDDService();
@@ -312,7 +339,7 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
    	
      	// calculate and save statistics to HDFS
      	saveDatasetStatistics(trajectoryRDD);
-    // 	saveDatasetStatisticsHist(trajectoryRDD);
+     	saveDatasetStatisticsHist(trajectoryRDD);
      	
      	// clear cache
      	fileRDD.unpersist();

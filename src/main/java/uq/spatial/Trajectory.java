@@ -1,10 +1,15 @@
 package uq.spatial;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedList;
 import java.util.List;
+
+import org.apache.hadoop.io.Writable;
 
 /**
  * A trajectory entity.
@@ -12,10 +17,10 @@ import java.util.List;
  * @author uqdalves
  */
 @SuppressWarnings("serial")
-public class Trajectory implements Serializable, Cloneable {
+public class Trajectory implements Serializable, Cloneable, Writable, GeoInterface {
 	// the list of Points that composes the trajectory
 	private List<Point> pointsList = 
-			new LinkedList<Point>();
+			new ArrayList<Point>();
 	
 	/**
 	 * This trajectory Identifier.
@@ -87,6 +92,7 @@ public class Trajectory implements Serializable, Cloneable {
 	 */
 	public void merge(Trajectory t){
 		pointsList.addAll(t.getPointsList());
+		
 	}
 	
 	/**
@@ -224,19 +230,53 @@ public class Trajectory implements Serializable, Cloneable {
 	 * Return the Minimum Boundary Rectangle (MBR) 
 	 * of this trajectory.
 	 */
-	public Box mbr(){ 
-		final double INF = Double.MAX_VALUE;
-		double top=0.0, bottom=INF, left=INF, right=0.0;
-		
-		for(Point p : pointsList){
-			if(p.x > right) right = p.x;
-			if(p.x < left) left = p.x;
-			if(p.y > top) top = p.y;
-			if(p.y < bottom) bottom = p.y;
+	public Box mbr(){
+		if(!isEmpty()){
+			double minX=MAX_X, maxX=MIN_X;
+			double minY=MAX_Y, maxY=MIN_Y;  
+			for(Point p : pointsList){
+				if(p.x > maxX) maxX = p.x;
+				if(p.x < minX) minX = p.x;
+				if(p.y > maxY) maxY = p.y;
+				if(p.y < minY) minY = p.y;
+			}
+			return new Box(minX,maxX,minY,maxY);	
 		}
-
-		return new Box(left, right, bottom, top);
+		return new Box(0.0,0.0,0.0,0.0);
 	}
+	
+	/**
+	 * Split this trajectory into n sub-trajectories
+	 * and return the Minimum Boundary Rectangles (MBR) 
+	 * of each sub-trajectory.
+	 * 
+	 * @param n Number of splits.
+	 */
+/*	public List<Box> mbrList(final int n){ 
+		System.out.println("size: " + size() + " n: " + n);
+		// increment
+		double div = (size()-1) / n;
+		int inc = (int)Math.floor(div);
+		List<Box> boxList = new ArrayList<Box>();
+
+		double minX=MAX_X, maxX=MIN_X;
+		double minY=MAX_Y, maxY=MIN_Y;
+		for(int i=0; i<size(); i++){
+			Point p = pointsList.get(i);  
+			if(p.x > maxX) maxX = p.x;
+			if(p.x < minX) minX = p.x;
+			if(p.y > maxY) maxY = p.y;
+			if(p.y < minY) minY = p.y;
+			
+			
+			if(i>0 && i%inc == 0){
+				boxList.add(new Box(minX, minY, maxX, maxY));
+				minX=MAX_X; maxX=MIN_X; minY=MAX_Y; maxY=MIN_Y;
+				// --i;
+			}
+		}
+		return boxList;
+	}*/
 	
 	/**
 	 * True if these trajectories intersect each other.
@@ -285,7 +325,18 @@ public class Trajectory implements Serializable, Cloneable {
 		
 	    return false;
 	}
-
+	
+	/**
+	 * Print this trajectory: System out.
+	 */
+	public void print(){
+		System.out.println(id + ": {");
+		for(Point p : pointsList){
+			p.print();
+		}
+		System.out.println("};");
+	}
+	
     /**
      * Makes an identical copy of this element
      */
@@ -315,17 +366,30 @@ public class Trajectory implements Serializable, Cloneable {
 	
 	@Override
 	public String toString() {
-		return id;
+		StringBuilder toString = new StringBuilder();
+		toString.append(id);
+		for(Point p : pointsList){
+			toString.append(" " + p.toString());
+		}
+		return toString.toString();
 	}
 	
-	/**
-	 * Print this trajectory: System out.
-	 */
-	public void print(){
-		System.out.println(id + ": {");
-		for(Point p : pointsList){
-			p.print();
-		}
-		System.out.println("};");
+	public void readFields(DataInput in) throws IOException {
+		id = in.readLine();
+	    int size = in.readInt();
+	    pointsList = new ArrayList<Point>();//(size);
+	    for(int i = 0; i < size; i++){
+	        Point p = new Point();
+	        p.readFields(in);
+	        pointsList.add(p);
+	    }
+	}
+	
+	public void write(DataOutput out) throws IOException {
+		out.writeChars(id);//(pointsList.size());
+	    out.writeInt(pointsList.size());
+	    for(Point p : pointsList) {
+	        p.write(out);
+	    }
 	}
 }

@@ -7,7 +7,7 @@ import org.apache.spark.api.java.function.Function;
 
 import uq.fs.HDFSFileService;
 import uq.spark.SparkEnvInterface;
-import uq.spark.indexing.IndexParamInterface;
+import uq.spark.index.IndexParamInterface;
 import uq.spatial.Point;
 
 import org.apache.spark.mllib.clustering.KMeans;
@@ -30,12 +30,12 @@ public class KMeansSpark implements Serializable, SparkEnvInterface, IndexParamI
 	// KMeans++ initial mode
 	private static final String INIT_MODE = KMeans.K_MEANS_PARALLEL();
 	// The fraction of the data to sample in the Approximate mode
-	private static final double FRACTION = 0.01;
+	private static final double FRACTION = 1.0;
  	// Number of KMeans to run in parallel (in the deterministic mode)
-	private static final int K_MEANS_RUNS = 10;
+	private static final int K_MEANS_RUNS = 5;
 	// Maximum number of iterations in the KMeans (for both
 	// approximate and deterministic mode)
-	private static final int K_MEANS_ITR = 200;
+	private static final int K_MEANS_ITR = 100;
 	
 	/**
 	 * Cluster a set of points into a given
