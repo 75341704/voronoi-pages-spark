@@ -2,12 +2,14 @@ package uq.spark.index;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import uq.spark.SparkEnvInterface;
 import uq.spatial.Box;
 import uq.spatial.Circle;
 import uq.spatial.Point;
+import uq.spatial.Trajectory;
 import uq.spatial.voronoi.VoronoiDiagramGenerator;
 import uq.spatial.voronoi.VoronoiPolygon; 
  
@@ -124,14 +126,31 @@ public final class VoronoiDiagram implements Serializable, SparkEnvInterface {
 	public List<Integer> getOverlapingPolygons(Circle region){
 		// retrieve candidate polygons IDs = VSIs
 		List<Integer> candidates = new ArrayList<Integer>();
-		
 		// check if the query area (box) intersects the polygon.
-		for(VoronoiPolygon poly : getPolygonList()){
+		for(VoronoiPolygon poly : polygonsList){
 			if(poly.overlap(region)){
 				candidates.add(poly.pivot.pivotId);
 			}
 		}
 		return candidates;
+	}
+	
+	/**
+	 * Retrieve all  Voronoi polygons that overlap with this trajectory.
+	 * 
+	 * @return A set of polygons ID
+	 */
+	public HashSet<Integer> getOverlapingPolygons(Trajectory q) {
+		HashSet<Integer> polySet = new HashSet<Integer>();
+		for(VoronoiPolygon vp : polygonsList){
+			for(Point p : q.getPointsList()){
+				if(vp.contains(p)){
+					polySet.add(vp.pivot.pivotId);
+					break;
+				}
+			}
+		}
+		return polySet;
 	}
 	
 	/**

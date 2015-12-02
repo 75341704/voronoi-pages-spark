@@ -94,7 +94,7 @@ public class QueryProcessingService implements Serializable {
 					selectionQuery.runSpatialSelectionId(region);
 			trajectoryList = 
 					collector.collectTrajectoriesById(resultIdList).collect();
-		} else{
+		} else {
 			// sub-trajectories only
 			trajectoryList = 
 					selectionQuery.runSpatialSelection(region);

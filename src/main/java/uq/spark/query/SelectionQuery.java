@@ -67,68 +67,35 @@ public class SelectionQuery implements Serializable, SparkEnvInterface, IndexPar
 			filteredPagesRDD.values().flatMapToPair(new PairFlatMapFunction<Page, String, Trajectory>() {
 				public Iterable<Tuple2<String, Trajectory>> call(Page page) throws Exception {
 					// the query result
-				List<Tuple2<String, Trajectory>> resultList = 
+					List<Tuple2<String, Trajectory>> resultList = 
 							new ArrayList<Tuple2<String, Trajectory>>();
 					// second filter: by MBR
 					List<Trajectory> mbrFilterList = page.getTrajectoryTree()
 							.getTrajectoriesByMBR(region);
 					// refinement:
-					// check for sub-trajectories that lies inside the given area.
+					// check for sub-trajectories in the given area during [t0,t1].
 					for(Trajectory t : mbrFilterList){
-						// refinement
 						if(t.timeIni() > t1 || t.timeEnd() < t0){continue;}
-						for(int i=0; i<t.size();){
-							Point p = t.get(i);
-							Trajectory sub = new Trajectory(t.id);
-							while(region.contains(p)){
-								if(p.time >= t0 && p.time <= t1){
-									sub.addPoint(p);
-								}
-								if(i < t.size()-1){
-									p = t.get(++i);
-								} 
-								// last trajectory point
-								else{++i; break;}
-								// no more points have time <= t1
-								if(p.time > t1){break;}
-							}
-							if(!sub.isEmpty()){
+						Trajectory sub = new Trajectory(t.id);
+						for(Point p : t.getPointsList()){
+							if(region.contains(p) && p.time >= t0 && p.time <= t1){
+								sub.addPoint(p);
+							} else if(!sub.isEmpty()){
 								resultList.add(new Tuple2<String, Trajectory>(t.id, sub));
-							} else{++i;}
-							// no more points have time <= t1
-							if(p.time > t1){break;}
+								sub = new Trajectory(t.id);
+							}
+						}
+						// last sub-trajectory not add
+						if(!sub.isEmpty()){
+							resultList.add(new Tuple2<String, Trajectory>(t.id, sub));
 						}
 					}
-					return resultList;
+					return resultList;	
 				}
 			});
-
-		// an empty bag of sub-trajectories to start aggregating
-		SelectObject emptyBag = new SelectObject();
-		Function2<SelectObject, Trajectory, SelectObject> seqFunc = 
-				new Function2<SelectObject, Trajectory, SelectObject>() {
-			public SelectObject call(SelectObject bag, Trajectory t) throws Exception {
-				bag.add(t);
-				return bag;
-			}
-		};
-		Function2<SelectObject, SelectObject, SelectObject> combFunc = 
-				new Function2<SelectObject, SelectObject, SelectObject>() {
-			public SelectObject call(SelectObject bag1, SelectObject bag2) throws Exception {
-				return bag1.merge(bag2);
-			}
-		};
+		
 		// aggregate the sub-trajectories by key, and post-process
-		List<Trajectory> spatialSelectList =
-			subTrajectoryRDD.aggregateByKey(emptyBag, seqFunc, combFunc).values()
-				.flatMap(new FlatMapFunction<SelectObject, Trajectory>() {
-					public Iterable<Trajectory> call(SelectObject bag) throws Exception {
-						// post-process and return
-						return bag.postProcess();
-					}
-			}).collect();
-
-		return spatialSelectList;
+		return postProcess(subTrajectoryRDD);
 	}
 
 	/**
@@ -151,38 +118,38 @@ public class SelectionQuery implements Serializable, SparkEnvInterface, IndexPar
 		 *  REFINEMENT STEP:
 		 *******************/		
 		// Emit, from every page, a list of sub-trajectory that satisfy the query
-		List<Trajectory> spatialSelectList =
-			filteredPagesRDD.values().flatMap(new FlatMapFunction<Page, Trajectory>() {
-				public Iterable<Trajectory> call(Page page) throws Exception {
+		JavaPairRDD<String, Trajectory> subTrajectoryRDD = 
+			filteredPagesRDD.values().flatMapToPair(new PairFlatMapFunction<Page, String, Trajectory>() {
+				public Iterable<Tuple2<String, Trajectory>> call(Page page) throws Exception {
 					// the query result
-					List<Trajectory> resultList = new ArrayList<Trajectory>();
+					List<Tuple2<String, Trajectory>> resultList = 
+							new ArrayList<Tuple2<String, Trajectory>>();
 					// second filter: by MBR
 					List<Trajectory> mbrFilterList = page.getTrajectoryTree()
 							.getTrajectoriesByMBR(region);
 					// refinement:
 					// check for sub-trajectories that lies inside the given area.
 					for(Trajectory t : mbrFilterList){
-						for(int i=0; i<t.size();){
-							Point p = t.get(i);
-							Trajectory sub = new Trajectory(t.id);
-							while(region.contains(p)){
+						Trajectory sub = new Trajectory(t.id);
+						for(Point p : t.getPointsList()){
+							if(region.contains(p)){
 								sub.addPoint(p);
-								if(i < t.size()-1){
-									p = t.get(++i);
-								} 
-								// last trajectory point
-								else{++i; break;}
+							} else if(!sub.isEmpty()){
+								resultList.add(new Tuple2<String, Trajectory>(t.id, sub));
+								sub = new Trajectory(t.id);
 							}
-							if(!sub.isEmpty()){
-								resultList.add(sub);
-							} else{++i;}
+						}
+						// last sub-trajectory not add
+						if(!sub.isEmpty()){
+							resultList.add(new Tuple2<String, Trajectory>(t.id, sub));
 						}
 					}
 					return resultList;
 				}
-			}).collect();
+			});
 
-		return spatialSelectList;
+		// aggregate the sub-trajectories by key, and post-process
+		return postProcess(subTrajectoryRDD);
 	}
 
 	/**
@@ -206,37 +173,36 @@ public class SelectionQuery implements Serializable, SparkEnvInterface, IndexPar
 		 *  REFINEMENT STEP:
 		 *******************/
 		// Emit, from every page, a list of sub-trajectory that satisfy the query
-		List<Trajectory> temporalSelectList =
-			filteredPagesRDD.values().flatMap(new FlatMapFunction<Page, Trajectory>() {
-				public Iterable<Trajectory> call(Page page) throws Exception {
-					// query result for this page
-					List<Trajectory> resultList = new ArrayList<Trajectory>();
-					// check in the page the sub-trajectories that satisfy the query. 
+		JavaPairRDD<String, Trajectory> subTrajectoryRDD = 
+			filteredPagesRDD.values().flatMapToPair(new PairFlatMapFunction<Page, String, Trajectory>() {
+				public Iterable<Tuple2<String, Trajectory>> call(Page page) throws Exception {
+					// the query result
+					List<Tuple2<String, Trajectory>> resultList = 
+							new ArrayList<Tuple2<String, Trajectory>>();
+					// refinement:
+					// check for sub-trajectory points active during [t0,t1].
 					for(Trajectory t : page.getTrajectoryList()){
-						// refinement:
 						if(t.timeIni() > t1 || t.timeEnd() < t0){continue;}
-						for(int i=0; i<t.size();){
-							Point p = t.get(i);
-							Trajectory sub = new Trajectory(t.id);
-							while(p.time >= t0 && p.time <= t1){
+						Trajectory sub = new Trajectory(t.id);
+						for(Point p : t.getPointsList()){
+							if(p.time >= t0 && p.time <= t1){
 								sub.addPoint(p);
-								if(i < t.size()-1){
-									p = t.get(++i);
-								} 
-								// last trajectory point
-								else{++i; break;}
+							} else if(!sub.isEmpty()){
+								resultList.add(new Tuple2<String, Trajectory>(t.id, sub));
+								sub = new Trajectory(t.id);
 							}
-							if(!sub.isEmpty()){
-								resultList.add(sub);
-								break; //no more points have time <= t1
-							} else{++i;}
+						}
+						// last sub-trajectory not add
+						if(!sub.isEmpty()){
+							resultList.add(new Tuple2<String, Trajectory>(t.id, sub));
 						}
 					}
-					return resultList;
+					return resultList;			
 				}
-			}).collect();		
-		
-		return temporalSelectList;	
+			});
+
+		// aggregate the sub-trajectories by key, and post-process
+		return postProcess(subTrajectoryRDD);
 	}
 	
 	/**
@@ -421,5 +387,41 @@ public class SelectionQuery implements Serializable, SparkEnvInterface, IndexPar
 				
 		// Filter pages from the Voronoi RDD (filter)
 		return pagesRDD.filterPagesByIndex(candidatesVSI, TPIini, TPIend);
+	}
+	
+	/**
+	 * The post-processing phase of the selection query (not whole).
+	 * </br>
+	 * Aggregate sub-trajectories by key and post-process.
+	 */
+	private List<Trajectory> postProcess(
+			final JavaPairRDD<String, Trajectory> subTrajectoryRDD){
+		// an empty list of sub-trajectories to start aggregating
+		SelectObject emptyObj = new SelectObject();
+		// group sub-trajectories belonging to the same parent trajectory
+		Function2<SelectObject, Trajectory, SelectObject> seqFunc = 
+				new Function2<SelectObject, Trajectory, SelectObject>() {
+			public SelectObject call(SelectObject obj, Trajectory t) throws Exception {
+				obj.add(t);
+				return obj;
+			}
+		};
+		Function2<SelectObject, SelectObject, SelectObject> combFunc = 
+				new Function2<SelectObject, SelectObject, SelectObject>() {
+			public SelectObject call(SelectObject obj1, SelectObject obj2) throws Exception {
+				return obj1.merge(obj2);
+			}
+		};
+		// aggregate the sub-trajectories by key, and post-process
+		List<Trajectory> selectList =
+			subTrajectoryRDD.aggregateByKey(emptyObj, seqFunc, combFunc)
+				.values().flatMap(new FlatMapFunction<SelectObject, Trajectory>() {
+					public Iterable<Trajectory> call(SelectObject obj) throws Exception {
+						// post-process and return
+						return obj.postProcess();
+					}
+			}).collect();
+
+		return selectList;			
 	}
 }

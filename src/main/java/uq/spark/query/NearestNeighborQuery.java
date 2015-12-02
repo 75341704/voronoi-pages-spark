@@ -98,7 +98,7 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 		// retrieve candidate polygons IDs = VSIs
 		// check for polygons that overlaps with Q
 		HashSet<Integer> candidatePolygons = 
-				getOverlappingPolygons(q);
+				diagram.value().getOverlapingPolygons(q);
 
 		// for every polygon that overlap with Q, 
 		// add their neighbors to the candidates list
@@ -212,7 +212,7 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 		// retrieve candidate polygons IDs = VSIs
 		// check for polygons that overlaps with Q
 		HashSet<Integer> candidatePolygons = 
-				getOverlappingPolygons(q);
+				diagram.value().getOverlapingPolygons(q);
 
 		// for every polygon that overlap with Q, 
 		// add their neighbors to the candidates list
@@ -302,23 +302,5 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 			Collections.sort(currentList, nnComparator);		
 		}
 		return currentList;
-	}
-
-	/**
-	 * Get the Voronoi polygons that overlap with this trajectory.
-	 * 
-	 * @return A set of polygons ID
-	 */
-	private HashSet<Integer> getOverlappingPolygons(Trajectory q) {
-		HashSet<Integer> polySet = new HashSet<Integer>();
-		for(Point p : q.getPointsList()){
-			for(VoronoiPolygon vp : diagram.value().getPolygonList()){
-				if(vp.contains(p)){
-					polySet.add(vp.pivot.pivotId);
-					break;
-				}
-			}
-		}
-		return polySet;
 	}
 }

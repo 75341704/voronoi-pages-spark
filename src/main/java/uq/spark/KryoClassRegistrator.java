@@ -13,8 +13,6 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 
 import uq.exp.ExperimentsService;
-import uq.exp.STObject;
-import uq.exp.TimeWindow;
 import uq.fs.DatasetStatisticsService;
 import uq.fs.FileToObjectRDDService;
 import uq.fs.HDFSFileService;
@@ -39,6 +37,7 @@ import uq.spatial.Box;
 import uq.spatial.Circle;
 import uq.spatial.Point;
 import uq.spatial.PointComparator;
+import uq.spatial.STBox;
 import uq.spatial.TimeComparator;
 import uq.spatial.Trajectory;
 import uq.spatial.TrajectoryRTree;
@@ -66,12 +65,14 @@ import uq.spatial.voronoi.VoronoiPolygon;
  * @author uqdalves
  *
  */
-public class ClassRegistrator implements KryoRegistrator{
+public class KryoClassRegistrator implements KryoRegistrator{
 	/**
 	 * Register classes for serialization
 	 */
 	@SuppressWarnings("rawtypes")
 	public void registerClasses(Kryo kryo) {
+		// spark
+		kryo.register(Logger.class, new FieldSerializer(kryo, Logger.class));
 		
 		// partitioning
 		kryo.register(PartitioningIndexingService.class, new FieldSerializer(kryo, PartitioningIndexingService.class));
@@ -98,6 +99,7 @@ public class ClassRegistrator implements KryoRegistrator{
 		kryo.register(PointComparator.class, new FieldSerializer(kryo, PointComparator.class));
 		kryo.register(TimeComparator.class, new FieldSerializer(kryo, TimeComparator.class));
 		kryo.register(TrajectoryRTree.class, new FieldSerializer(kryo, TrajectoryRTree.class));
+		kryo.register(STBox.class, new FieldSerializer(kryo, STBox.class));
 		
 		// query
 		kryo.register(QueryProcessingService.class, new FieldSerializer(kryo, QueryProcessingService.class));	
@@ -143,8 +145,6 @@ public class ClassRegistrator implements KryoRegistrator{
 		
 		// experiments
 		kryo.register(ExperimentsService.class, new FieldSerializer(kryo, ExperimentsService.class));
-		kryo.register(TimeWindow.class, new FieldSerializer(kryo, TimeWindow.class));
-		kryo.register(STObject.class, new FieldSerializer(kryo, STObject.class));
 		
 		/*
 		kryo.register(Color.class, new Serializer() {

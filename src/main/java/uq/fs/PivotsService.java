@@ -72,31 +72,7 @@ public class PivotsService implements Serializable, SparkEnvInterface, IndexPara
 		
 		// call of k-means algorithm
 		Vector[] centersVec = 
-				KMeansSpark.clusterCenters(pointsRDD, k, false);
-		
-		List<Point> centroids = new ArrayList<Point>();
-		for(int i=0; i < centersVec.length; i++){
-			double[] coord = centersVec[i].toArray();
-			centroids.add(new Point(coord[0], coord[1]));
-		}
-		
-		return centroids;
-	}
-	
-	/**
-	 * Select a small sample of the given RDD of points
-	 * and cluster the sample points into K groups, then
-	 * select the groups centroids.
-	 * 
-	 * @param k The number of clusters.
-	 */
-	public static List<Point> selectKMeansApprox(final JavaRDD<Point> pointsRDD, final int k){
-		System.out.println("\nSelecting " + k + "-Means Approx. ..");
-		System.out.println();
-		
-		// call of k-means algorithm
-		Vector[] centersVec = 
-				KMeansSpark.clusterCenters(pointsRDD, k, true);
+				KMeansSpark.clusterCenters(pointsRDD, k);
 		
 		List<Point> centroids = new ArrayList<Point>();
 		for(int i=0; i < centersVec.length; i++){
@@ -125,7 +101,7 @@ public class PivotsService implements Serializable, SparkEnvInterface, IndexPara
      	HDFSFileService hdfsService = new HDFSFileService();
 	
      	// ramdom selection
-     	List<Point> pointsList = 
+    	List<Point> pointsList = 
      			selectRandomPoints(pointsRDD, 250);
      	hdfsService.savePointListHDFS(pointsList, "pivots-random-250.txt");
      	pointsList = 
@@ -140,23 +116,6 @@ public class PivotsService implements Serializable, SparkEnvInterface, IndexPara
      	pointsList = 
      			selectRandomPoints(pointsRDD, 4000);
      	hdfsService.savePointListHDFS(pointsList, "pivots-random-4000.txt");
-	
-     	// approximated k-means selection 
-     	pointsList = 
-     			selectKMeansApprox(pointsRDD, 250);
-		hdfsService.savePointListHDFS(pointsList, "pivots-kmeans-approx-250.txt");
-     	pointsList = 
-     			selectKMeansApprox(pointsRDD, 500);
-		hdfsService.savePointListHDFS(pointsList, "pivots-kmeans-approx-500.txt");
-		pointsList = 
-				selectKMeansApprox(pointsRDD, 1000);
-		hdfsService.savePointListHDFS(pointsList, "pivots-kmeans-approx-1000.txt");
-     	pointsList = 
-     			selectKMeansApprox(pointsRDD, 2000);
-		hdfsService.savePointListHDFS(pointsList, "pivots-kmeans-approx-2000.txt");
- 		pointsList = 
-     			selectKMeansApprox(pointsRDD, 4000);
-		hdfsService.savePointListHDFS(pointsList, "pivots-kmeans-approx-4000.txt");
 		
      	// k-means selection 
     	pointsList = 
@@ -168,7 +127,7 @@ public class PivotsService implements Serializable, SparkEnvInterface, IndexPara
 		pointsList = 
 				selectKMeans(pointsRDD, 1000);
 		hdfsService.savePointListHDFS(pointsList, "pivots-kmeans-1000.txt");
-     	pointsList = 
+		pointsList = 
      			selectKMeans(pointsRDD, 2000);
 		hdfsService.savePointListHDFS(pointsList, "pivots-kmeans-2000.txt");
      	pointsList = 

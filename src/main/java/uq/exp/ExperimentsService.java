@@ -11,11 +11,13 @@ import java.util.LinkedList;
 import java.util.List;
  
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;
 
 import uq.fs.FileToObjectRDDService;
 import uq.fs.HDFSFileService;
+import uq.spark.Logger;
 import uq.spark.SparkEnvInterface;
 import uq.spark.index.IndexParamInterface;
 import uq.spark.index.PartitioningIndexingService;
@@ -26,6 +28,7 @@ import uq.spark.query.QueryProcessingService;
 import uq.spatial.Box;
 import uq.spatial.GeoInterface;
 import uq.spatial.Point;
+import uq.spatial.STBox;
 import uq.spatial.Trajectory;
 import uq.spatial.transformation.ProjectionTransformation;
 
@@ -39,9 +42,9 @@ import uq.spatial.transformation.ProjectionTransformation;
 public class ExperimentsService implements Serializable, SparkEnvInterface, IndexParamInterface, GeoInterface {
 	private static final HDFSFileService HDFS = new HDFSFileService();
 	// experiments log
-	private static final StringBuffer LOG = new StringBuffer();
-	// experiment LOG file name
-	private static final String FILE_NAME = 
+	private static final Logger LOG = new Logger();
+	// experiment log file name
+	private static final String LOG_NAME = 
 			"experiments-" + K + "-" + TIME_WINDOW_SIZE + "s";
 
 	/**
@@ -51,7 +54,7 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 		System.out.println();
 		System.out.println("Running Experiments..");
 		System.out.println();
-			
+		
 		/************************
 		 * DATA INDEXING 
 		 ************************/
@@ -71,14 +74,14 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 		TrajectoryTrackTable trajectoryTrackTable = 
 				partitioningService.getTrajectoryTrackTable();
 
-System.out.println("Num polygons: " + voronoiDiagram.value().size());
-System.out.println("Num pages: " + voronoiPagesRDD.count());
-System.out.println("Num TTT tuples: " + trajectoryTrackTable.count());
+		// action to force building the index
+		System.out.println("Num pages: " + voronoiPagesRDD.count());
+		System.out.println("Num TTT tuples: " + trajectoryTrackTable.count());
 
-/*		// save the index structure
- 		voronoiPagesRDD.save(LOCAL_PATH + "/index-structure-1");
-		trajectoryTrackTable.save(LOCAL_PATH + "/index-structure-1");
-		
+		// save the index structure
+ 		voronoiPagesRDD.save(LOCAL_PATH + "/index-structure-4");
+		trajectoryTrackTable.save(LOCAL_PATH + "/index-structure-4");
+/*		
 		// save information regarding indexing
 		voronoiPagesRDD.savePagesInfo();
 		voronoiPagesRDD.savePagesHistory();
@@ -87,7 +90,7 @@ System.out.println("Num TTT tuples: " + trajectoryTrackTable.count());
 		/************************
 		 * QUERIES PROCESING 
 		 ************************/
-		QueryProcessingService queryService = new QueryProcessingService(
+/*		QueryProcessingService queryService = new QueryProcessingService(
 				voronoiPagesRDD, trajectoryTrackTable, voronoiDiagram); 
 		
 		/******
@@ -121,7 +124,7 @@ System.out.println("Num TTT tuples: " + trajectoryTrackTable.count());
 		/******
 		 * SPATIAL TEMPORAL SELECTION QUERIES
 		 ******/
-		List<STObject> stUseCases = readSpatialTemporalUseCases();
+/*		List<STObject> stUseCases = readSpatialTemporalUseCases();
 		{
 			LOG.append("Spatial-Temporal Selection Query Result:\n\n");
 			long selecQueryTime=0;
@@ -132,79 +135,32 @@ System.out.println("Num TTT tuples: " + trajectoryTrackTable.count());
 				// run query
 				List<Trajectory> result = queryService
 						.getSpatialTemporalSelection(stObj.region, stObj.timeIni, stObj.timeEnd, true);
-
-			long time = System.currentTimeMillis()-start;
-			LOG.append("Query " + queryId++ + ": " + result.size() + " trajectories in " + time + " ms.\n");
-			selecQueryTime += time;
-	
-System.out.println("res: " +result.size());
+				long time = System.currentTimeMillis()-start;
+				LOG.append("Query " + queryId++ + ": " + result.size() + " trajectories in " + time + " ms.\n");
+				selecQueryTime += time;		
 			}
 			LOG.append("\nSpatial-Temporal Selection ends at: " + System.currentTimeMillis() + "ms.");
 			LOG.append("\nTotal Spatial-Temporal Selection Query Time: " + selecQueryTime + " ms.\n\n");
 		}
-
+*/
 		// save the result log to HDFS
-		HDFS.saveLogFileHDFS(LOG, FILE_NAME);
-	
+		LOG.save(LOG_NAME);
+		
 		// unpersist
 		voronoiPagesRDD.unpersist();
 		trajectoryTrackTable.unpersist();
 	}
-	
-	/**
-	 * Read the uses cases for time slice queries
-	 */
-	public static List<TimeWindow> readTimeSliceUseCases(){
-		List<String> lines = 
-				HDFS.readFileHDFS("/spark-data/use-cases/time-slice-use-cases");
-		// process lines
-		long timeIni, timeEnd;
-		List<TimeWindow> timeWindowList = new LinkedList<TimeWindow>(); 
-		for(String line : lines){
-			if(line.length() > 1){
-				String[] tokens = line.split(" ");
-				timeIni = Long.parseLong(tokens[0]);
-				timeEnd = Long.parseLong(tokens[1]); 
-				
-				timeWindowList.add(new TimeWindow(timeIni, timeEnd));
-			}
-		}
-		return timeWindowList;
-	}
-	
-	/**
-	 * Read the uses cases for spatial selection queries
-	 */
-	public static List<Box> readSpatialUseCases(){
-		List<String> lines = 
-				HDFS.readFileHDFS("/spark-data/use-cases/spatial-use-cases");
-		// process lines
-		double left, right, bottom, top;
-		List<Box> boxList = new LinkedList<Box>(); 
-		for(String line : lines){
-			if(line.length() > 3){
-				String[] tokens = line.split(" ");
-				left	= Double.parseDouble(tokens[0]);
-				right	= Double.parseDouble(tokens[1]);
-				bottom	= Double.parseDouble(tokens[2]);
-				top		= Double.parseDouble(tokens[3]);
-				
-				boxList.add(new Box(left, right, bottom, top));
-			}
-		}
-		return boxList;
-	}
-	
+		
 	/**
 	 * Read the uses cases for spatial-temporal selection queries
 	 */
-	public static List<STObject> readSpatialTemporalUseCases(){
+	public static List<STBox> readSpatialTemporalUseCases(){
 		List<String> lines = 
 				HDFS.readFileHDFS("/spark-data/use-cases/spatial-temporal-use-cases");
 		// process lines
 		long timeIni, timeEnd;
 		double left, right, bottom, top;
-		List<STObject> stList = new LinkedList<STObject>(); 
+		List<STBox> stList = new LinkedList<STBox>(); 
 		for(String line : lines){
 			if(line.length() > 3){
 				String[] tokens = line.split(" ");
@@ -215,7 +171,7 @@ System.out.println("res: " +result.size());
 				timeIni = Long.parseLong(tokens[4]);
 				timeEnd = Long.parseLong(tokens[5]); 
 				
-				stList.add(new STObject(left, right, bottom, top, timeIni, timeEnd));
+				stList.add(new STBox(left, right, bottom, top, timeIni, timeEnd));
 			}
 		}
 		return stList;

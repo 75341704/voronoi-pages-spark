@@ -4,8 +4,8 @@ import java.io.Serializable;
 import java.util.Comparator;
 
 /**
- * Comparator to compare point in clockwise based on a 
- * referential point (center).
+ * Comparator to compare points in clockwise order based on a 
+ * referential point (clock center).
  * 
  * @author uqdalves
  * 
@@ -16,6 +16,9 @@ public class PointComparator<T> implements Serializable, Comparator<Point>{
 	// referential point
 	private Point center = new Point(0,0,0);
 
+	/**
+	 * A 'clock' center point as referential.
+	 */
 	public PointComparator(Point center) {
 		this.center = center;
 	}

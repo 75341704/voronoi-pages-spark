@@ -150,7 +150,7 @@ public class PartitioningIndexingService implements Serializable, SparkEnvInterf
 						// current trajectory
 						Trajectory trajectory = trajectoryItr.next();
 
-						// info of the previous  point
+						// info of the previous point
 						Point prev = null;
 						int prevVSI = 0;
 						int prevTPI = 0;
@@ -167,7 +167,7 @@ public class PartitioningIndexingService implements Serializable, SparkEnvInterf
 							int TPI = (int)(point.time / TIME_WINDOW_SIZE) + 1; // Time Page Index  
 								
 							// find the closest pivot to this point
-							double min = INF;
+							double min  = INF;
 							double dist = 0.0;
 							for(Point pivot : pivotList){
 								dist = point.dist(pivot);
@@ -177,25 +177,21 @@ public class PartitioningIndexingService implements Serializable, SparkEnvInterf
 								}
 							}
 							point.pivotId = VSI;
-															 
-							// check for boundary objects
-							if(prev == null){
-								sub.addPoint(point); //first point
-							} else if(VSI == prevVSI && TPI == prevTPI){
-								sub.addPoint(point);
-							} 
-							// space/time boundary segment
-							else { 
-								// the current sub-trajectory also receives this boundary point
-								sub.addPoint(point);
-								// create the page for the previous sub-trajectory
-								PageIndex index = new PageIndex(prevVSI, prevTPI);
-								// add pair <PageIndex, Sub-Trajectory>
-								resultPairs.add(new Tuple2<PageIndex, Trajectory>(index, sub));
-								// new sub-trajectory for this boundary segment
-								sub = new Trajectory(id);
-								sub.addPoint(prev);
-								sub.addPoint(point);
+							
+							// the current sub-trajectory always receives this point
+							sub.addPoint(point);
+							if(prev != null){ // not first point
+								// space/time boundary segment
+								if(VSI != prevVSI || TPI != prevTPI){
+									// create the page for the previous sub-trajectory
+									PageIndex index = new PageIndex(prevVSI, prevTPI);
+									// add pair <(VSI,TPI), Sub-Trajectory>
+									resultPairs.add(new Tuple2<PageIndex, Trajectory>(index, sub));
+									// new sub-trajectory for this boundary segment
+									sub = new Trajectory(id);
+									sub.addPoint(prev);
+									sub.addPoint(point);									
+								}
 							}
 							prev = point;
 							prevVSI = VSI;
@@ -211,96 +207,7 @@ public class PartitioningIndexingService implements Serializable, SparkEnvInterf
 					return resultPairs;
 				}
 			});
-		
-		// Map trajectories to pages index (sub-trajectories)
-/*		JavaPairRDD<PageIndex, Page> trajectoriesToPagesRDD = trajectoryRDD
-	     	.mapPartitionsToPair(new PairFlatMapFunction<Iterator<Trajectory>, PageIndex, Page>() {
-				
-	     		// collect pivots, inside each map job (broadcasted variable)
-				final List<Point> pivotList = 
-						voronoiDiagram.value().getPivots();
-				
-				public Iterable<Tuple2<PageIndex, Page>> call(Iterator<Trajectory> trajectoryItr) throws Exception {
-					// An iterable list to return	
-					List<Tuple2<PageIndex, Page>> iterableMap = 
-							  new ArrayList<Tuple2<PageIndex,Page>>();
 
-					// read each trajectory in this partition
-					while(trajectoryItr.hasNext()){
-						Trajectory trajectory = trajectoryItr.next();
-
-						// info of the previous  point
-						Point prev = null;
-						int prevVSI = 0;
-						int prevTPI = 0;
-						
-						// an empty sub-trajectory
-						String id = trajectory.id;
-						Trajectory sub = new Trajectory(id);
-						
-						// split the trajectory into sub-trajectories
-						// for each page it intersects with
-						for(Point point : trajectory.getPointsList()){
-							// Indexes
-							int VSI = 1; // Voronoi Spatial Index 
-							int TPI = (int)(point.time / TIME_WINDOW_SIZE) + 1; // Time Page Index  
-								
-							// find the closest pivot to this point
-							double min = INF;
-							double dist = 0.0;
-							for(Point pivot : pivotList){
-								dist = point.dist(pivot);
-								if(dist < min){
-									min = dist;
-									VSI = pivot.pivotId;
-								}
-							}
-							point.pivotId = VSI;
-															 
-							// check for boundary objects
-							if(prev == null){
-								sub.addPoint(point); //first point
-							} else if(VSI == prevVSI && TPI == prevTPI){
-								sub.addPoint(point);
-							} 
-							// space/time boundary segment
-							else { 
-								// the current sub-trajectory also receives this boundary point
-								sub.addPoint(point);
-								 
-								// create the page for the previous sub-trajectory
-								PageIndex index = new PageIndex(prevVSI, prevTPI);
-								Page page = new Page();
-								page.add(sub);
-								
-								// add pair <PageIndex, Page>
-								iterableMap.add(new Tuple2<PageIndex, Page>(index, page));
-								
-								// new sub-trajectory for this boundary segment
-								sub = new Trajectory(id);
-								sub.addPoint(prev);
-								sub.addPoint(point);
-							}
-							prev = point;
-							prevVSI = VSI;
-							prevTPI = TPI; 
-						}
-						// add the page for the last sub-trajectory read
-						PageIndex index = new PageIndex(prevVSI, prevTPI);
-						Page page = new Page();
-						page.add(sub);
-						
-						// add pair <PageIndex, Page>
-						iterableMap.add(new Tuple2<PageIndex, Page>(index, page));
-					}
-					
-					// the iterable map list
-					return iterableMap;
-				}
-			});
-			
-		return trajectoriesToPagesRDD;
-		*/
 		return trajectoriesToPagesRDD;
 	}
 }

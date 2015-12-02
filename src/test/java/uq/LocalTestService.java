@@ -24,10 +24,12 @@ import uq.spark.index.Page;
 import uq.spark.index.PageIndex;
 import uq.spark.index.TrajectoryTrackTable;
 import uq.spark.query.QueryProcessingService;
+import uq.spark.query.SelectObject;
 import uq.spark.query.SelectionQuery;
 import uq.spatial.Box;
 import uq.spatial.Point;
 import uq.spatial.PointComparator;
+import uq.spatial.TimeComparator;
 import uq.spatial.Trajectory;
 import uq.spatial.TrajectoryRTree;
 import uq.spatial.clustering.PartitioningAroundMedoids;
@@ -529,7 +531,7 @@ public class LocalTestService  extends TestCase {
 		
 		for(String a : tokens){
 			System.out.println(a);
-		}*/
+		}*//*
 		Trajectory t1 = new Trajectory("T1");
 		t1.addPoint( new Point(0,0) );
 		t1.addPoint( new Point(1,1) );
@@ -552,29 +554,76 @@ public class LocalTestService  extends TestCase {
 		Trajectory t4 = new Trajectory("T4");
 		t4.addPoint( new Point(0,0) );
 		t4.addPoint( new Point(3,11) );
-/*
+
 		TrajectoryRTree tree = new TrajectoryRTree();
 		tree.add(t1);
 		tree.add(t2);
 		tree.add(t3);
 		tree.add(t4);
-	*/
-System.out.println("T1 BOX:");	
-t1.mbr().print();
-System.out.println("\nT1 Rectangle:");
-Rectangle r = t1.mbr().rectangle();
-System.out.println("("+r.minX+", "+r.maxY+") " + " ("+r.maxX+", "+r.maxY+")");
-System.out.println("("+r.minX+", "+r.minY+") " + " ("+r.maxX+", "+r.minY+")");
-		
-/*		
+
+		System.out.println("T1 BOX:");	
+		t1.mbr().print();
+		System.out.println("\nT1 Rectangle:");
+		Rectangle r = t1.mbr().rectangle();
+		System.out.println("("+r.minX+", "+r.maxY+") " + " ("+r.maxX+", "+r.maxY+")");
+		System.out.println("("+r.minX+", "+r.minY+") " + " ("+r.maxX+", "+r.minY+")");
+	
 		Box region = new Box(0, 5, 5, 8);
 		List<Trajectory> list = tree.getTrajectoriesByMBR(region);//getKNearest(region, 10);//TrajectoriesInRange(region);
 
 		System.out.println("In the box");
 		for(Trajectory t : list){
 			System.out.println(t.id);
+		}*/
+		
+	/*	
+		Trajectory t1a = new Trajectory("T1");
+		t1a.addPoint( new Point(0,0,0) );
+		t1a.addPoint( new Point(1,1,1) );
+		t1a.addPoint( new Point(2,0,2) );
+		t1a.addPoint( new Point(3,1,3) );
+		
+		Trajectory t1b = new Trajectory("T1");
+	//	t1b.addPoint( new Point(2,0,2) );
+	//	t1b.addPoint( new Point(3,1,3) );
+		t1b.addPoint( new Point(4,0,4) );
+		t1b.addPoint( new Point(4,0,4) );
+		t1b.addPoint( new Point(4,0,4) );
+	//	t1b.addPoint( new Point(5,1,5) );
+		t1b.addPoint( new Point(6,0,6) );
+		
+		Trajectory t1c = new Trajectory("T1");
+	//	t1c.addPoint( new Point(5,1,5) );
+	    t1c.addPoint( new Point(6,0,6) );
+	//	t1c.addPoint( new Point(7,0,7) );
+	//	t1c.addPoint( new Point(8,0,8) );
+	/*		
+		List<Trajectory> list = new ArrayList<Trajectory>();
+		list.add(t1b);list.add(t1a);list.add(t1c);
+	
+		System.out.println("Before sort:");
+		for(Trajectory t : list){
+			t.print();
 		}
-		*/
+		
+		TimeComparator<Trajectory> comp = new TimeComparator<Trajectory>();
+		Collections.sort(list, comp);
+		
+		System.out.println("\n\nAfter sort:");
+		for(Trajectory t : list){
+			t.print();
+		}
+		
+		SelectObject obj = new SelectObject();
+		obj.add(t1b);
+		obj.add(t1a);
+		obj.add(t1c);
+		
+		List<Trajectory> list = obj.postProcess();
+		System.out.println("After Post-process:");
+		for(Trajectory t : list){
+			t.print();
+		}*/
 	}
 	
 	/**

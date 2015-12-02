@@ -1,12 +1,11 @@
 package uq.spark.query;
 
 import java.io.Serializable;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.Function;
-
+import uq.spatial.TimeComparator;
 import uq.spatial.Trajectory;
 
 /**
@@ -23,12 +22,7 @@ import uq.spatial.Trajectory;
 public class SelectObject implements Serializable {
 	// the sub-trajectories that composes this query object
 	private List<Trajectory> subTrajectoryList = 
-			new LinkedList<Trajectory>();
-	/**
-	 * The ID of the trajectory in this Query Object.
-	 */
-	public String parentId;
-	
+			new ArrayList<Trajectory>();
 	/**
 	 * Initiates an empty bag.
 	 */
@@ -37,7 +31,6 @@ public class SelectObject implements Serializable {
 	 * Initial selected sub-trajectory.
 	 */
 	public SelectObject(Trajectory obj) {
-		this.parentId = obj.id;
 		this.subTrajectoryList.add(obj);
 	}
 
@@ -58,101 +51,65 @@ public class SelectObject implements Serializable {
 	}
 
 	/**
-	 * True if these two query objects have the same parent trajectory.
-	 */
-	public boolean isSameParent(SelectObject obj){
-		return this.parentId.equals(obj.parentId);
-	}
-	
-	/**
-	 * Group these two bag elements.
+	 * Merge these two objects.
 	 * 
 	 * @return Return this merged bag
 	 */
-	public SelectObject merge(SelectObject bag){
-		subTrajectoryList.addAll(bag.getSubTrajectoryList());
+	public SelectObject merge(SelectObject obj){
+		subTrajectoryList.addAll(obj.getSubTrajectoryList());
 		return this;
 	}
 	
-	public List<Trajectory> postProcess(){
-		/*for(Trajectory t :){
-			
-		}*/
-		// TODO
-		return null;
-	}
-
 	/**
-	 * Post processing operation.
-	 * </br>
-	 * Sorts the trajectory points by time stamp
-	 * and removes any duplicates form the map phase.
+	 * Post-process the sub-trajectories in this 
+	 * object. Merge consecutive sub-trajectories
+	 * if needed. 
 	 * 
-	 * @return A post-processed trajectory
+	 * @return Return a list of post-processed
+	 * trajectories
 	 */
-	private Trajectory postProcess(Trajectory t) {
+	public List<Trajectory> postProcess(){
+		if(subTrajectoryList.size() <= 1){
+			return subTrajectoryList;
+		}
 		
+		// sort the sub-trajectories by initial time-stamp
+		TimeComparator<Trajectory> comparator = 
+				new TimeComparator<Trajectory>();
+		Collections.sort(subTrajectoryList, comparator);
 		
-		t.sort();
-		int size = t.size();
-		for(int i = 0; i < size-1; i++){
-			if(t.get(i).equals(t.get(i+1))){
-				t.removePoint(i);
-				size--;
-				--i;
+		// merge consecutive sub-trajectories
+		Trajectory sub_0 = subTrajectoryList.get(0);
+		List<Trajectory> tList = new ArrayList<Trajectory>();
+		for(int i=1; i<subTrajectoryList.size(); i++){
+			Trajectory sub_i = subTrajectoryList.get(i);
+			// bug do sort fix
+			if(sub_0.head().equals(sub_i.head())){
+				sub_0 = sub_0.size() > sub_i.size() ? sub_0 : sub_i;
+			} else {
+				// check last segment of sub_0 with first of sub_i
+				if(sub_i.size() > 1){
+					// merge the segments
+					if(sub_0.tail().equals(sub_i.head())){
+						sub_0.merge(sub_i.subTrajectory(1, sub_i.size()));
+					}
+					else if(sub_0.tail().equals(sub_i.get(1))){
+						sub_0.merge(sub_i.subTrajectory(2, sub_i.size()));
+					} else{
+						tList.add(sub_0);
+						sub_0 = subTrajectoryList.get(i);
+					}
+				} else if(sub_i.size() == 1){
+					if(!sub_0.tail().equals(sub_i.head())){
+						tList.add(sub_0);
+						sub_0 = subTrajectoryList.get(i);
+					}
+				}
 			}
 		}
-		return t;
-	}
+		// add final sub-trajectory
+		tList.add(sub_0);
 
-	/**
-	 * Post processing operation. Done in parallel.
-	 * </br>
-	 * Sorts the trajectory points by time stamp
-	 * and removes any duplicates from the map phase.
-	 * 
-	 * @return A post-processed RDD of trajectories
-	 */
-	private JavaRDD<Trajectory> postProcess(
-			JavaRDD<Trajectory> trajectoryRDD){
-		// map each trajec to its post-process version
-		trajectoryRDD = 
-			trajectoryRDD.map(new Function<Trajectory, Trajectory>() {
-				public Trajectory call(Trajectory t) throws Exception {
-					return postProcess(t);
-				}
-			});
-		return trajectoryRDD;
+		return tList;
 	}
-	/**
-	 * Group two query objects (sub-trajectories): 
-	 * sub-trajectories must belong to the same
-	 * trajectory (parent).
-	 * </br>
-	 * Group the sub-trajectory and page index lists.
-	 * 
-	 * @return Return true if the object have been 
-	 * grouped (have same parent)
-	 */
-/*	protected boolean group(SelectObject obj){
-		if(this.isSameParent(obj)){
-			this.subTrajectoryList.addAll(obj.getSubTrajectoryList());
-			this.pageIndexSet.addAll(obj.getPageIndexSet());
-			return true;
-		} else{
-			System.out.println("Query Objects Have Not Same Parents!");
-			return false;
-		}
-	}
-
-	/**
-	 * Print this query object: System out.
-	 */
-	public void print(){
-		System.out.println("[" + parentId + "]");
-		for(Trajectory t : subTrajectoryList){
-			t.print();
-		}
-	}
-
 }

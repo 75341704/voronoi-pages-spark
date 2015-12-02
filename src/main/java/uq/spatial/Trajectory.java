@@ -126,7 +126,7 @@ public class Trajectory implements Serializable, Cloneable, Writable, GeoInterfa
 	 */
 	public long timeIni(){
 		if(!pointsList.isEmpty()){
-			return pointsList.get(0).time;
+			return head().time;
 		}
 		return 0;
 	}
@@ -137,7 +137,7 @@ public class Trajectory implements Serializable, Cloneable, Writable, GeoInterfa
 	 */
 	public long timeEnd(){
 		if(!pointsList.isEmpty()){
-			return pointsList.get(pointsList.size()-1).time;
+			return tail().time;
 		}
 		return 0;
 	}
@@ -209,20 +209,27 @@ public class Trajectory implements Serializable, Cloneable, Writable, GeoInterfa
 	}
 	
 	/**
+	 * The 'tail' of this trajectory: Last sample point.
+	 */
+	public Point tail(){
+		if(!this.isEmpty()){
+			return pointsList.get(pointsList.size()-1);
+		}
+		return null;
+	}
+	
+	/**
 	 * Return a sub-trajectory of this trajectory, from 
 	 * beginIndex inclusive to endIndex exclusive.
 	 * </br>
 	 * Note: trajectory index starts from 0 (zero).
 	 */
 	public Trajectory subTrajectory(int beginIndex, int endIndex){
-		assert(beginIndex >= 0 && endIndex <= this.size() && 
-				beginIndex < endIndex)
+		assert(beginIndex >= 0 && endIndex <= size() && 
+			   beginIndex < endIndex)
 		: "Trajectory index out of bound.";
-		Trajectory sub = new Trajectory();
-		for(int i=beginIndex; i<endIndex; i++){
-			Point p = this.get(i).clone();
-			sub.addPoint(p);
-		}
+		Trajectory sub = new Trajectory(id);
+		sub.addPointList(pointsList.subList(beginIndex, endIndex));
 		return sub;
 	}
 	

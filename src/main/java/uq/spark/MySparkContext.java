@@ -16,7 +16,7 @@ public class MySparkContext {
 			//.setMaster("local") 
 			.setAppName("SparkProject");//;
 			/*.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-	 		.set("spark.kryo.registrator", ClassRegistrator.class.getName())
+	 		.set("spark.kryo.registrator", KryoClassRegistrator.class.getName())
 			.set("spark.kryoserializer.buffer.mb","128");*/// 24mb
 	private static final JavaSparkContext sc = new JavaSparkContext(conf);
 	

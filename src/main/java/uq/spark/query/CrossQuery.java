@@ -1,6 +1,7 @@
 package uq.spark.query;
 
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -51,6 +52,10 @@ public class CrossQuery implements Serializable, SparkEnvInterface {
 		/*******************
 		 *  FILTERING STEP:
 		 *******************/
+		// retrieve candidate polygons IDs = VSIs
+		// check for polygons that overlaps with Q
+		HashSet<Integer> candidatePolygons = 
+				diagram.value().getOverlapingPolygons(q);
 /*		
 		// Uses the trajectory bounding box to return 
 		// candidate trajectories.
@@ -96,6 +101,10 @@ public class CrossQuery implements Serializable, SparkEnvInterface {
 		/*******************
 		 *  FILTERING STEP:
 		 *******************/
+		// retrieve candidate polygons IDs = VSIs
+		// check for polygons that overlaps with Q
+		HashSet<Integer> candidatePolygons = 
+				diagram.value().getOverlapingPolygons(q);
 /*		// Uses the trajectory bounding box to return 
 		// candidate trajectories.
 		Box region = q.mbr();
