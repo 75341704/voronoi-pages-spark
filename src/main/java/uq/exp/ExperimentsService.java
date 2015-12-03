@@ -6,12 +6,10 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
  
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;
 
@@ -25,7 +23,6 @@ import uq.spark.index.TrajectoryTrackTable;
 import uq.spark.index.VoronoiDiagram;
 import uq.spark.index.VoronoiPagesRDD;
 import uq.spark.query.QueryProcessingService;
-import uq.spatial.Box;
 import uq.spatial.GeoInterface;
 import uq.spatial.Point;
 import uq.spatial.STBox;
@@ -45,15 +42,12 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 	private static final Logger LOG = new Logger();
 	// experiment log file name
 	private static final String LOG_NAME = 
-			"experiments-" + K + "-" + TIME_WINDOW_SIZE + "s";
-
+			"experiments-8-nodes";// + K + "-" + TIME_WINDOW_SIZE + "s";
 	/**
 	 * Main
 	 */
 	public static void main(String[] args){
-		System.out.println();
-		System.out.println("Running Experiments..");
-		System.out.println();
+		System.out.println("\nRunning Experiments..\n");
 		
 		/************************
 		 * DATA INDEXING 
@@ -74,31 +68,39 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 		TrajectoryTrackTable trajectoryTrackTable = 
 				partitioningService.getTrajectoryTrackTable();
 
+		/************************
+		 * LOAD/WRITE THE INDEX 
+		 ************************/
+		// save the index structure
+/* 		voronoiPagesRDD.save(LOCAL_PATH + "/index-structure-7");
+		trajectoryTrackTable.save(LOCAL_PATH + "/index-structure-7");
+		
+		// load the index structure
+		VoronoiPagesRDD voronoiPagesRDD = new VoronoiPagesRDD();
+		voronoiPagesRDD.load(TACHYON_PATH + "/index-structure/pages-rdd");
+		TrajectoryTrackTable trajectoryTrackTable = new TrajectoryTrackTable();
+		trajectoryTrackTable.load(TACHYON_PATH + "/index-structure/trajectory-track-table-rdd");
+
+		// save information regarding indexing
+/*		voronoiPagesRDD.savePagesInfo();
+		trajectoryTrackTable.saveTableInfo();
+*/		
 		// action to force building the index
 		System.out.println("Num pages: " + voronoiPagesRDD.count());
 		System.out.println("Num TTT tuples: " + trajectoryTrackTable.count());
 
-		// save the index structure
- 		voronoiPagesRDD.save(LOCAL_PATH + "/index-structure-4");
-		trajectoryTrackTable.save(LOCAL_PATH + "/index-structure-4");
-/*		
-		// save information regarding indexing
-		voronoiPagesRDD.savePagesInfo();
-		voronoiPagesRDD.savePagesHistory();
-		trajectoryTrackTable.saveTableInfo();
-*/
 		/************************
 		 * QUERIES PROCESING 
 		 ************************/
-/*		QueryProcessingService queryService = new QueryProcessingService(
+		QueryProcessingService queryService = new QueryProcessingService(
 				voronoiPagesRDD, trajectoryTrackTable, voronoiDiagram); 
 		
 		/******
 		 * K-NN QUERIES
 		 ******/
-/*		List<Trajectory> nnUseCases = readNearestNeighborUseCases();
+		List<Trajectory> nnUseCases = readNearestNeighborUseCases();
 		{
-			LOG.append("NN Query Result:\n\n");
+			LOG.appendln("NN Query Result:\n");
 			long nnQueryTime=0;
 			int queryId=1;
 			//int k = 10;
@@ -112,37 +114,56 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 						.getNearestNeighbor(t, tIni, tEnd);
 				if(result != null){	
 					System.out.println("NN retornou: " + result.id);
-						long time = System.currentTimeMillis() - start;
-						LOG.append("NN Query " + queryId++ + ": " +  result.id + " in " + time + " ms.\n");
-						nnQueryTime += time;
+					long time = System.currentTimeMillis() - start;
+					LOG.appendln("NN Query " + queryId++ + ": " +  result.id + " in " + time + " ms.");
+					nnQueryTime += time;
 				}
 			}
-			LOG.append("\nNN query ends at: " + System.currentTimeMillis() + "ms.");
-			LOG.append("\nTotal NN Time: " + nnQueryTime + " ms.");
+			LOG.appendln("NN query ends at: " + System.currentTimeMillis() + "ms.");
+			LOG.appendln("Total NN Time: " + nnQueryTime + " ms.\n");
 		}
-
 		/******
-		 * SPATIAL TEMPORAL SELECTION QUERIES
+		 * SPATIAL TEMPORAL SELECTION QUERIES (WHOLE)
 		 ******/
-/*		List<STObject> stUseCases = readSpatialTemporalUseCases();
+		List<STBox> stUseCases = readSpatialTemporalUseCases();
 		{
-			LOG.append("Spatial-Temporal Selection Query Result:\n\n");
+			LOG.appendln("Spatial-Temporal Selection Query Result (Whole):\n");
 			long selecQueryTime=0;
 			int queryId=1;
-			for(STObject stObj : stUseCases){
+			for(STBox stObj : stUseCases){
 				System.out.println("Query " + queryId);
 				long start = System.currentTimeMillis();
-				// run query
-				List<Trajectory> result = queryService
-						.getSpatialTemporalSelection(stObj.region, stObj.timeIni, stObj.timeEnd, true);
+				// run query - whole trajectories
+				List<Trajectory> result = queryService 
+						.getSpatialTemporalSelection(stObj, stObj.timeIni, stObj.timeEnd, true);
 				long time = System.currentTimeMillis()-start;
-				LOG.append("Query " + queryId++ + ": " + result.size() + " trajectories in " + time + " ms.\n");
+				LOG.appendln("Query " + queryId++ + ": " + result.size() + " trajectories in " + time + " ms.");
 				selecQueryTime += time;		
 			}
-			LOG.append("\nSpatial-Temporal Selection ends at: " + System.currentTimeMillis() + "ms.");
-			LOG.append("\nTotal Spatial-Temporal Selection Query Time: " + selecQueryTime + " ms.\n\n");
+			LOG.appendln("Spatial-Temporal Selection ends at: " + System.currentTimeMillis() + "ms.");
+			LOG.appendln("Total Spatial-Temporal Selection Query Time: " + selecQueryTime + " ms.\n");
 		}
-*/
+		/******
+		 * SPATIAL TEMPORAL SELECTION QUERIES (EXACT)
+		 ******/
+		{
+			LOG.appendln("Spatial-Temporal Selection Query Result (Exact):\n");
+			long selecQueryTime=0;
+			int queryId=1;
+			for(STBox stObj : stUseCases){
+				System.out.println("Query " + queryId);
+				long start = System.currentTimeMillis();
+				// run query - exact sub-trajectories
+				List<Trajectory> result = queryService
+						.getSpatialTemporalSelection(stObj, stObj.timeIni, stObj.timeEnd, false);
+				long time = System.currentTimeMillis()-start;
+				LOG.append("Query " + queryId++ + ": " + result.size() + " sub-trajectories in " + time + " ms.");
+				selecQueryTime += time;		
+			}
+			LOG.appendln("Spatial-Temporal Selection (Exact) ends at: " + System.currentTimeMillis() + "ms.");
+			LOG.appendln("Total Spatial-Temporal Selection Query Time: " + selecQueryTime + " ms.\n");
+		}
+		
 		// save the result log to HDFS
 		LOG.save(LOG_NAME);
 		

@@ -624,6 +624,13 @@ public class LocalTestService  extends TestCase {
 		for(Trajectory t : list){
 			t.print();
 		}*/
+		
+		String s = "(T_10000018_1428224713_19569812763736438525,163,1190188,)";
+		String[] tokens = s.split(("\\(|,|\\)"));
+		for(String st : tokens){
+			System.out.println(st);
+		}
+		System.out.println("Size: " +tokens.length);
 	}
 	
 	/**

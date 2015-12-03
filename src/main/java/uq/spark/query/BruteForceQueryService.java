@@ -220,12 +220,9 @@ public class BruteForceQueryService implements Serializable, SparkEnvInterface{
 		JavaRDD<Trajectory> filteredRDD = 
 				trajRDD.filter(new Function<Trajectory, Boolean>() {
 			public Boolean call(Trajectory t) throws Exception {
-				for(Point p : t.getPointsList()){
-					if(p.time >= t0 && p.time <= t1){
-						return true;
-					}
-				}
-				return false;
+				if(t.timeIni() > t1 || t.timeEnd() < t0){
+					return false;
+				} return true;
 			}
 		});
 		// get the distance from Q to all trajectories		
@@ -235,7 +232,7 @@ public class BruteForceQueryService implements Serializable, SparkEnvInterface{
 		List<NearNeighbor> nnList = 
 			filteredRDD.map(new Function<Trajectory, NearNeighbor>() {
 				public NearNeighbor call(Trajectory t) throws Exception {
-					double d = dist.EDwP(t, q);
+					double d = dist.EDwP(q, t);
 					NearNeighbor nn = new NearNeighbor(t, d);
 					return nn;
 				}
@@ -253,26 +250,26 @@ public class BruteForceQueryService implements Serializable, SparkEnvInterface{
 		FileToObjectRDDService rdd = new FileToObjectRDDService();
 		JavaRDD<Trajectory> trajRDD = rdd.mapRawDataToTrajectoryRDD(fileRDD);
 		
-		LOG.append("Brute Force Test Result.\n\n");
+		LOG.appendln("Brute Force Test Result.");
 		
 		// Run spatial-temporal selection test
 		List<STBox> stUseCases = readSpatialTemporalUseCases();
-		LOG.append("Spatial-Temporal Selection Result.\n");
+		LOG.appendln("Spatial-Temporal Selection Result.");
 		for(int i=1; i<=10; i++){
 			STBox stObj = stUseCases.get(i);
 			List<Point> ptList = 
 					getSpatialTemporalSelectionPt(trajRDD, stObj, stObj.timeIni, stObj.timeEnd);
 			List<Trajectory> tList = 
 					getSpatialTemporalSelectionTr(trajRDD, stObj, stObj.timeIni, stObj.timeEnd);
-			LOG.append("\nQuery " + i + " Result.\n");
-			LOG.append("Number of Points: "  + ptList.size() + "\n");
-			LOG.append("Trajectories Returned: " + tList.size() + "\n");
+			LOG.appendln("Query " + i + " Result.");
+			LOG.appendln("Number of Points: "  + ptList.size());
+			LOG.appendln("Trajectories Returned: " + tList.size());
 		}
 		
 		// Run KNN test
 		List<Trajectory> nnUseCases = readNearestNeighborUseCases();
-		LOG.append("K-NN Result.\n");
-		for(int i=1; i<=10; i++){
+		LOG.appendln("K-NN Result.");
+		for(int i=1; i<=13; i++){
 			// params
 			Trajectory q = nnUseCases.get(i);
 			long tIni = q.timeIni();
@@ -281,12 +278,13 @@ public class BruteForceQueryService implements Serializable, SparkEnvInterface{
 			// run query
 			List<NearNeighbor> result = 
 					getKNNQuery(trajRDD, q, tIni, tEnd, k);
-			LOG.append("\nQuery " + i + " Result.\n");
-			LOG.append("Query Trajectory: " + q.id + " \n");
-			LOG.append("Trajectories Returned: " + result.size());
+			LOG.appendln("Query " + i + " Result.");
+			LOG.appendln("Query Trajectory: " + q.id);
+			LOG.appendln("Trajectories Returned: " + result.size());
 			int n=1;
-			for(Trajectory t : result){
-				LOG.append("\n" + n + "-NN: " + t.id);
+			for(NearNeighbor nn : result){
+				LOG.appendln(n++ + "-NN: " + nn.id);
+				LOG.appendln("Dist: " + nn.distance);
 			}
 		}
 

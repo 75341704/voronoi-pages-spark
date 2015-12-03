@@ -22,6 +22,21 @@ public class Logger implements Serializable {
 	public void append(String log){
 		this.log.append(log);
 	}
+	
+	/**
+	 * Add a string line to this log.
+	 * Add a break line after the string.
+	 */
+	public void appendln(String log){
+		this.log.append(log + "\n");
+	}
+	
+	/**
+	 * Add a break line int this log.
+	 */
+	public void appendln(){
+		this.log.append("\n");
+	}
 		
 	/**
 	 * Print this log: System out.

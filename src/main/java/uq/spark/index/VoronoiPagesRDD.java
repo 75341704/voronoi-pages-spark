@@ -1,6 +1,7 @@
 package uq.spark.index;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -60,7 +61,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 	 * Build this pages RDD by loading it from the file system.
 	 * </br>
 	 * Read a previous saved copy of this RDD.
-	 * 	 * 
+	 * 
 	 * @param The absolute path to the RDD folder (HDFS, Tachyon, Local, etc.).
 	 */
 	public void load(final String path) {
@@ -303,28 +304,98 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 	}
 	
 	/**
-	 * The average number of trajectories/sub-trajectories 
-	 * per Voronoi page.
+	 * Return a vector with some statistical information about
+	 * the number of sub-trajectories per page in this RDD.
+	 * 
+	 * @return A double vector containing the mean: [0], min: [1],
+	 * max: [2], and std: [3] number of sub-trajectories per page
+	 * in this RDD.
 	 */
-	public double avgSubTrajectoriesPerPage(){
-		double total = getNumSubTrajectories();
-		double numPages = count();
-		return (total / numPages);
+	public double[] subTrajectoriesPerPageInfo(){
+		// total number of pages
+		final double total = count();
+		
+		// get mean, min, max and std number of sub-trajectories per page
+		double[] count = 
+			voronoiPagesRDD.values().glom().map(new Function<List<Page>, double[]>() {
+				public double[] call(List<Page> list) throws Exception {
+					double[] vec = new double[]{0.0,INF,0.0,0.0};
+					for(Page page : list){
+						long count = page.size();
+						vec[0] += count;
+						vec[1] = Math.min(vec[1], count); 
+						vec[2] = Math.max(vec[2], count); 
+						vec[3] += (count*count);
+					}
+					return vec;
+				}
+			}).reduce(new Function2<double[], double[], double[]>() {
+				public double[] call(double[] vec1, double[] vec2) throws Exception {
+					vec1[0] = vec1[0] + vec2[0];
+					vec1[1] = Math.min(vec1[1], vec2[1]);
+					vec1[2] = Math.max(vec1[2], vec2[2]);
+					vec1[3] = vec1[3] + vec2[3];
+					return vec1;
+				}
+			});
+		// get std
+		count[3] = (count[3] - 
+				(1/total)*(count[0]*count[0]));
+		count[3] = Math.sqrt(count[3]/total);
+		// get mean
+		count[0] = count[0]/total;
+		
+		return count;
 	}
 
 	/**
-	 * The average number of trajectory points 
-	 * per Voronoi page.
+	 * Return a vector with some statistical information about
+	 * the number of trajectory points per page in this RDD.
+	 * 
+	 * @return A double vector containing the mean: [0], min: [1],
+	 * max: [2], and std: [3] number of trajectory points per page
+	 * in this RDD.
 	 */
-	public double avgPointsPerPage(){
-		double total = getNumPoints();
-		double numPages = count();
-		return (total / numPages);
+	public double[] pointsPerPageInfo(){
+		// total number of pages
+		final double total = count();
+		
+		// get mean, min, max and std number of sub-trajectories per page
+		double[] count = 
+			voronoiPagesRDD.values().glom().map(new Function<List<Page>, double[]>() {
+				public double[] call(List<Page> list) throws Exception {
+					double[] vec = new double[]{0.0,INF,0.0,0.0};
+					for(Page page : list){
+						long count = page.getPointsList().size();
+						vec[0] += count;
+						vec[1] = Math.min(vec[1], count); 
+						vec[2] = Math.max(vec[2], count); 
+						vec[3] += (count*count);
+					}
+					return vec;
+				}
+			}).reduce(new Function2<double[], double[], double[]>() {
+				public double[] call(double[] vec1, double[] vec2) throws Exception {
+					vec1[0] = vec1[0] + vec2[0];
+					vec1[1] = Math.min(vec1[1], vec2[1]);
+					vec1[2] = Math.max(vec1[2], vec2[2]);
+					vec1[3] = vec1[3] + vec2[3];
+					return vec1;
+				}
+			});
+		// get std
+		count[3] = (count[3] - 
+				(1/total)*(count[0]*count[0]));
+		count[3] = Math.sqrt(count[3]/total);
+		// get mean
+		count[0] = count[0]/total;
+		
+		return count;
 	}
 	
 	/**
-	 * The total number of trajectories/sub-trajectories 
-	 * in this RDD dataset (after the map phase).
+	 * The total number of sub-trajectories in this 
+	 * RDD dataset (after the map phase).
 	 */
 	public long getNumSubTrajectories(){
 		final long total =
@@ -406,40 +477,31 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 	 * Save to HDFS output folder as "pages-rdd-info"
 	 */
 	public void savePagesInfo(){
+		double[] trInfo = subTrajectoriesPerPageInfo();
+		double[] ptInfo = pointsPerPageInfo();
+		
 		List<String> info = new LinkedList<String>();
-		
-		String script = "Number of Voronoi Pages: " + 
-				count();
-		info.add(script);
-		
-		script = "Number of RDD Partitions: " + 
-				getNumPartitions();
-		info.add(script);
-		
-		script = "Total Number of Sub-Trajectories: " + 
-				getNumSubTrajectories();
-		info.add(script);
-		
-		script = "Total Number of Points: " + 
-				getNumPoints();
-		info.add(script);
-		
-		script = "Avg. Number of Sub-Trajectories per Page: " + 
-				avgSubTrajectoriesPerPage();
-		info.add(script);
-		
-		script = "Avg. Number of Points per Page: " + 
-				avgPointsPerPage() + "\n";
-		info.add(script);
-		
+		info.add("Number of Voronoi Pages: " + count());
+		info.add("Number of RDD Partitions: " + getNumPartitions());
+		info.add("Total Number of Sub-Trajectories: " + getNumSubTrajectories());
+		info.add("Avg. Sub-Trajectories per Page: " + trInfo[0]);
+		info.add("Min. Sub-Trajectories per Page: " + trInfo[1]);
+		info.add("Max. Sub-Trajectories per Page: " + trInfo[2]);
+		info.add("Std. Sub-Trajectories per Page: " + trInfo[3]);
+		info.add("Total Number of Points: " + getNumPoints());
+		info.add("Avg. Points per Page: " + ptInfo[0]);
+		info.add("Min. Points per Page: " + ptInfo[1]);
+		info.add("Max. Points per Page: " + ptInfo[2]);
+		info.add("Std. Points per Page: " + ptInfo[3]);
+
 		info.addAll( 
-			voronoiPagesRDD.map(new Function<Tuple2<PageIndex,Page>, String>() {
-				public String call(Tuple2<PageIndex, Page> page) throws Exception {
+			voronoiPagesRDD.values().map(new Function<Page, String>() {
+				public String call(Page page) throws Exception {
 					String script = "";
-					script += "("+page._1.toString() + ")\n";
-					script += page._2.getTrajectoryIdSet().size() + " parent trajectories.\n";
-					script += page._2.getTrajectoryList().size() + " sub-trajectories.\n";
-					script += page._2.getPointsList().size() + " points.";		
+					script += "("+page.toString() + ")\n";
+					script += page.getTrajectoryIdSet().size() + " parent trajectories.\n";
+					script += page.getTrajectoryList().size() + " sub-trajectories.\n";
+					script += page.getPointsList().size() + " points.";		
 					return script;
 				}
 			}).collect());
@@ -454,22 +516,27 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 	 * This is useful to print into a histogram.
 	 * Save the pages info into a file, one per line, as:
 	 * </br></br>
-	 * "PageIndex" "NumberOfSubTrajectories" "NumberOfPoints"  
+	 * "PageIndex" "Number of parent trajectories" "Number of sub-trajectories" "Number of points"  
 	 * </br></br>
 	 * Save to HDFS output folder as "pages_history"
 	 */
 	public void savePagesHistory(){
-		List<String> historyList = 
-			voronoiPagesRDD.map(new Function<Tuple2<PageIndex,Page>, String>() {
-				public String call(Tuple2<PageIndex, Page> page) throws Exception {
+		List<String> historyList = new ArrayList<String>();
+		// add header
+		historyList.add("page-index #-parent-trajectories #-sub-trajectories #-points");
+		// add histogram
+		historyList.addAll(
+			voronoiPagesRDD.values().map(new Function<Page, String>() {
+				public String call(Page page) throws Exception {
 					String script = "";
-					script += "("+page._1.toString() + ") ";
-					script += page._2.getTrajectoryList().size() + " ";
-					script += page._2.getPointsList().size();	
+					script += "("+page.toString() + ") ";
+					script += page.getTrajectoryIdSet().size() + " ";
+					script += page.getTrajectoryList().size() + " ";
+					script += page.getPointsList().size();	
 					return script;
 				}
-			}).collect();
-
+			}).collect());
+		
 		// save to hdfs
 		HDFSFileService hdfs = new HDFSFileService();
 		hdfs.saveStringListHDFS(historyList, "pages-rdd-history");

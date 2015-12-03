@@ -13,7 +13,7 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 
 import uq.exp.ExperimentsService;
-import uq.fs.DatasetStatisticsService;
+import uq.fs.DataStatisticsService;
 import uq.fs.FileToObjectRDDService;
 import uq.fs.HDFSFileService;
 import uq.fs.PivotsService;
@@ -88,7 +88,7 @@ public class KryoClassRegistrator implements KryoRegistrator{
 		// fs
 		kryo.register(HDFSFileService.class, new FieldSerializer(kryo, HDFSFileService.class));
 		kryo.register(FileToObjectRDDService.class, new FieldSerializer(kryo, FileToObjectRDDService.class));
-		kryo.register(DatasetStatisticsService.class, new FieldSerializer(kryo, DatasetStatisticsService.class));
+		kryo.register(DataStatisticsService.class, new FieldSerializer(kryo, DataStatisticsService.class));
 		kryo.register(TachyonFileService.class, new FieldSerializer(kryo, TachyonFileService.class));
 		
 		// spatial obj

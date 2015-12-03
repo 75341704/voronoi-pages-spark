@@ -31,7 +31,6 @@ C:\Users\uqdalves\Dropbox\SparkProject\spark-app\src\main\java\uq\spark\query\De
 C:\Users\uqdalves\Dropbox\SparkProject\spark-app\src\main\java\uq\spatial\distance\EDwPDistanceCalculator.java
 C:\Users\uqdalves\Dropbox\SparkProject\spark-app\src\main\java\uq\spatial\PointComparator.java
 C:\Users\uqdalves\Dropbox\SparkProject\spark-app\src\main\java\uq\fs\HDFSFileService.java
-C:\Users\uqdalves\Dropbox\SparkProject\spark-app\src\main\java\uq\fs\DatasetStatisticsService.java
 C:\Users\uqdalves\Dropbox\SparkProject\spark-app\src\main\java\uq\spatial\clustering\PartitioningAroundMedoids.java
 C:\Users\uqdalves\Dropbox\SparkProject\spark-app\src\main\java\uq\spatial\GeoInterface.java
 C:\Users\uqdalves\Dropbox\SparkProject\spark-app\src\main\java\uq\spark\index\VoronoiPagesRDD.java
@@ -53,6 +52,7 @@ C:\Users\uqdalves\Dropbox\SparkProject\spark-app\src\main\java\uq\spark\index\Tr
 C:\Users\uqdalves\Dropbox\SparkProject\spark-app\src\main\java\uq\spark\index\PageIndexSet.java
 C:\Users\uqdalves\Dropbox\SparkProject\spark-app\src\main\java\uq\spatial\distance\EuclideanDistanceCalculator.java
 C:\Users\uqdalves\Dropbox\SparkProject\spark-app\src\main\java\uq\spatial\voronoi\VoronoiEdge.java
+C:\Users\uqdalves\Dropbox\SparkProject\spark-app\src\main\java\uq\fs\DataStatisticsService.java
 C:\Users\uqdalves\Dropbox\SparkProject\spark-app\src\main\java\uq\spark\query\SelectionQuery.java
 C:\Users\uqdalves\Dropbox\SparkProject\spark-app\src\main\java\uq\spatial\delaunay\Triangle.java
 C:\Users\uqdalves\Dropbox\SparkProject\spark-app\src\main\java\uq\spatial\distance\EuclideanTimeSeriesDistanceCalculator.java

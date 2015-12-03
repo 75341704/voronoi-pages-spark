@@ -66,13 +66,13 @@ public interface SparkEnvInterface extends IndexParamInterface {
 			"/home/uqdalves/hadoop/hadoop-2.7.1";  // Local
 	
 	// the min number of partitions of the input
-	static final int NUM_PARTITIONS_DATA = 60; // number of data blocks
+	static final int NUM_PARTITIONS_DATA = 250; // number of data blocks
 		
 	// number of reduce tasks for the indexing process
 	static final int NUM_PARTITIONS_PAGES = 4 * NUM_PARTITIONS_DATA;
 	
 	// number of reduce tasks for the indexing process
-	static final int NUM_PARTITIONS_TTT = 2 * NUM_PARTITIONS_DATA;
+	static final int NUM_PARTITIONS_TTT = NUM_PARTITIONS_DATA / 2;
 		
 	// RDD storage level for the partitioning process
 	static final StorageLevel STORAGE_LEVEL_PARTITIONIG = 

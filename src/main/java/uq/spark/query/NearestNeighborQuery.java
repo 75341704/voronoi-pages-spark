@@ -21,10 +21,8 @@ import uq.spark.index.TrajectoryCollector;
 import uq.spark.index.TrajectoryTrackTable;
 import uq.spark.index.VoronoiDiagram;
 import uq.spark.index.VoronoiPagesRDD;
-import uq.spatial.Point;
 import uq.spatial.Trajectory;
 import uq.spatial.distance.DistanceService;
-import uq.spatial.voronoi.VoronoiPolygon;
 
 /**
  * Implement Most Similar Trajectory (nearest neighbor) 
@@ -121,7 +119,7 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 		 *******************/
 		// get first candidates
 		List<NearNeighbor> candidatesList = new LinkedList<NearNeighbor>();
-		candidatesList = getCandidatesNN(candidateRDD, candidatesList, q);
+		candidatesList = getCandidatesNN(candidateRDD, candidatesList, q, t0, t1);
 		// gambiarra
 		if(candidatesList.isEmpty()){
 			return new ArrayList<NearNeighbor>();
@@ -179,7 +177,7 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 				 *******************/
 				if(candidateRDD != null){ 
 					// collect next NN candidates
-					candidatesList = getCandidatesNN(candidateRDD, candidatesList, q);
+					candidatesList = getCandidatesNN(candidateRDD, candidatesList, q, t0, t1);
 				}
 				// collect the first k
 				if(candidatesList.size() > k){
@@ -260,7 +258,8 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 	}
 	
 	/**
-	 * Calculate the distance between every trajectory in the list to
+	 * Check the trajectories time-stamp and 
+	 * calculate the distance between every trajectory in the list to
 	 * the query trajectory, return a sorted list of NN by distance.
 	 * </br>
 	 * Calculate the NN object only for the new trajectories (i.e.  
@@ -271,15 +270,30 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 	private List<NearNeighbor> getCandidatesNN(
 			final JavaRDD<Trajectory> candidateRDD, 
 			final List<NearNeighbor> currentList,
-			final Trajectory q){
+			final Trajectory q,
+			final long t0, final long t1){
 		// filter out new trajectories
 		JavaRDD<Trajectory> filteredRDD;
 		if(currentList.isEmpty()){
-			filteredRDD = candidateRDD;
+			// gambiarra
+			if(candidateRDD == null){
+				filteredRDD = candidateRDD;
+			} else{
+				filteredRDD = candidateRDD.filter(new Function<Trajectory, Boolean>() {
+					public Boolean call(Trajectory t) throws Exception {
+						if(t.timeIni() > t1 || t.timeEnd() < t0){
+							return false;
+						} return true;
+					}
+				});
+			}
 		} else{
 			filteredRDD = 
 				candidateRDD.filter(new Function<Trajectory, Boolean>() {
 					public Boolean call(Trajectory t) throws Exception {
+						if(t.timeIni() > t1 || t.timeEnd() < t0){
+							return false;
+						}
 						return (!currentList.contains(t));
 					}
 				});

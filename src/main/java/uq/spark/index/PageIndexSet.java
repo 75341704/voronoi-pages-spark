@@ -25,7 +25,7 @@ public class PageIndexSet extends HashSet<PageIndex> implements Serializable{
 			PageIndex index = it.next();
 			string +=index.toString() + ",";
 		}
-		return string;
+		return string.substring(0, string.length()-1);
 	}
 	
 }

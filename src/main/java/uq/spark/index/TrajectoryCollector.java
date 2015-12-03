@@ -14,6 +14,7 @@ import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 
 import scala.Tuple2;
+
 import uq.spatial.Trajectory;
 import uq.spatial.TrajectoryRTree;
 
@@ -35,7 +36,7 @@ import uq.spatial.TrajectoryRTree;
 public class TrajectoryCollector implements Serializable{
 	private VoronoiPagesRDD pagesRDD;
 	private TrajectoryTrackTable trackTable;
-	
+
 	/**
 	 * Creates a new collector.
 	 */
@@ -68,9 +69,9 @@ public class TrajectoryCollector implements Serializable{
 		
 		// map each page to a list of sub-trajectories, and merge them
 		Trajectory trajectory =
-			filteredPagesRDD.flatMap(new FlatMapFunction<Tuple2<PageIndex,Page>, Trajectory>() {
-				public Iterable<Trajectory> call(Tuple2<PageIndex, Page> page) throws Exception {
-					return page._2.getTrajectoriesById(id);
+			filteredPagesRDD.values().flatMap(new FlatMapFunction<Page, Trajectory>() {
+				public Iterable<Trajectory> call(Page page) throws Exception {
+					return page.getTrajectoriesById(id);
 				}
 			}).reduce(new Function2<Trajectory, Trajectory, Trajectory>() {
 				public Trajectory call(Trajectory sub1, Trajectory sub2) throws Exception {
@@ -92,6 +93,8 @@ public class TrajectoryCollector implements Serializable{
 	 * Retrieve whole trajectories.
 	 * </br>
 	 * Post-process after collection.
+	 * </br>
+	 * May receive a logger to keep collection info.
 	 * 
 	 * @return Return a distributed dataset (RDD) of trajectories.
 	 * (Note: the given trajectories must be in the dataset)
@@ -106,16 +109,31 @@ public class TrajectoryCollector implements Serializable{
 		// filter pages that contains the specified trajectories
 		JavaPairRDD<PageIndex, Page> filteredPagesRDD = 
 				pagesRDD.filterPagesByIndex(indexSet);
-
+// TODO LOG
+		// collection log
+/*		if(log != null){
+ 			log.appendln("Collect Trajectories by Id.");
+			log.appendln("Total Pages: " + pagesRDD.count());
+			log.appendln("Total Pages Filtered: " + filteredPagesRDD.count());
+			// get the number of trajectories that intersect with these pages
+			int totalTrajectories = 
+				filteredPagesRDD.values().flatMap(new FlatMapFunction<Page, String>() {
+					public Iterable<String> call(Page page) throws Exception {
+						return page.getTrajectoryIdSet();
+					}
+				}).distinct().collect().size();
+			log.appendln("Total Trajectories Filtered: " + totalTrajectories);
+		}
+*/		
 		// map each page to a list key value pairs containing 
 		// the desired trajectories
 		JavaRDD<Trajectory> trajectoryRDD =
-			filteredPagesRDD.flatMapToPair(new PairFlatMapFunction<Tuple2<PageIndex,Page>, String, Trajectory>() {
-				public Iterable<Tuple2<String, Trajectory>> call(Tuple2<PageIndex, Page> page) throws Exception {
+			filteredPagesRDD.values().flatMapToPair(new PairFlatMapFunction<Page, String, Trajectory>() {
+				public Iterable<Tuple2<String, Trajectory>> call(Page page) throws Exception {
 					// iterable list to return
 					List<Tuple2<String, Trajectory>> list = 
 							new LinkedList<Tuple2<String, Trajectory>>();
-					for(Trajectory sub : page._2.getTrajectoryList()){
+					for(Trajectory sub : page.getTrajectoryList()){
 						if(trajectoryIdSet.contains(sub.id)){
 							list.add(new Tuple2<String, Trajectory>(sub.id, sub));
 						}
@@ -132,7 +150,13 @@ public class TrajectoryCollector implements Serializable{
 		
 		//post processing
 		trajectoryRDD = postProcess(trajectoryRDD);
-		
+// TODO LOG		
+		// collection log
+/*		if(log != null){
+			log.appendln("Total Trajectories Collected: " + trajectoryRDD.count());
+			log.appendln();
+		}
+*/	
 		return trajectoryRDD;
 	}
 	
@@ -143,7 +167,9 @@ public class TrajectoryCollector implements Serializable{
 	 * </br>
 	 * Return whole trajectories (also filter from the PagesRDD other pages
 	 * that might contain trajectories in the given pages set.
-
+	 * </br>
+	 * May receive a logger to keep collection info.
+	 * 
 	 * @return Return a distributed dataset (RDD) of trajectories.
 	 * If there is no trajectories in the given page set, then return null. 
 	 */
@@ -163,7 +189,9 @@ public class TrajectoryCollector implements Serializable{
 	 * </br>
 	 * Return whole trajectories (also filter from the PagesRDD other pages
 	 * that might contain trajectories in the given pages set.
-
+	 * </br>
+	 * May receive a logger to keep collection info.
+	 * 
 	 * @return Return a distributed dataset (RDD) of trajectories.
 	 * If there is no trajectories in the given page set, then return null. 
 	 */
@@ -173,14 +201,22 @@ public class TrajectoryCollector implements Serializable{
 		JavaPairRDD<PageIndex, Page> filteredPagesRDD = 
 				pagesRDD.filterPagesByIndex(indexSet);
 
+// TODO LOG
+		// collection log
+/*		if(log != null){
+			log.appendln("Collect Trajectories by Page Index.");
+			log.appendln("Total Pages: " + pagesRDD.count());
+			log.appendln("Total Pages to Collect: " + filteredPagesRDD.count());
+		}
+*/	
 		// check if there is any page to for the given parameters
 		// Note: (it might be there is no page in the given time interval for the given polygon)
 		if(!filteredPagesRDD.isEmpty()){			
 			// Collect the IDs of the trajectories inside the given pages.
 			final List<String> idList = 	
-				filteredPagesRDD.flatMap(new FlatMapFunction<Tuple2<PageIndex,Page>, String>() {
-					public Iterable<String> call(Tuple2<PageIndex, Page> page) throws Exception {
-						return page._2.getTrajectoryIdSet();
+				filteredPagesRDD.values().flatMap(new FlatMapFunction<Page, String>() {
+					public Iterable<String> call(Page page) throws Exception {
+						return page.getTrajectoryIdSet();
 					}
 				}).distinct().collect();
 
@@ -198,16 +234,16 @@ public class TrajectoryCollector implements Serializable{
 
 			// union the two RDDs (union set)
 			filteredPagesRDD = filteredPagesRDD.union(diffPagesRDD);
-			
+
 			// map each page to a list of key value pairs containing 
 			// the desired trajectories
 			JavaRDD<Trajectory> trajectoryRDD =
-				filteredPagesRDD.flatMapToPair(new PairFlatMapFunction<Tuple2<PageIndex,Page>, String, Trajectory>() {
-					public Iterable<Tuple2<String, Trajectory>> call(Tuple2<PageIndex, Page> page) throws Exception {
+				filteredPagesRDD.values().flatMapToPair(new PairFlatMapFunction<Page, String, Trajectory>() {
+					public Iterable<Tuple2<String, Trajectory>> call(Page page) throws Exception {
 						// iterable list to return
 						List<Tuple2<String, Trajectory>> list = 
 								new LinkedList<Tuple2<String, Trajectory>>();
-						for(Trajectory sub : page._2.getTrajectoryList()){
+						for(Trajectory sub : page.getTrajectoryList()){
 							if(idList.contains(sub.id)){
 								list.add(new Tuple2<String, Trajectory>(sub.id, sub));
 							}
@@ -224,7 +260,14 @@ public class TrajectoryCollector implements Serializable{
 			
 			// post processing
 			trajectoryRDD = postProcess(trajectoryRDD);		
-			
+// TODO LOG
+			// collection log
+/*			if(log != null){
+				log.appendln("Total Trajectories Filtered: " + idList.size());
+				log.appendln("Total Pages Filtered: " + filteredPagesRDD.count());
+				log.appendln("Total Trajectories Collected: " + trajectoryRDD.count());
+			}
+*/	
 			return trajectoryRDD;
 		}
 		return null;
@@ -331,40 +374,5 @@ public class TrajectoryCollector implements Serializable{
 			});
 		return trajectoryRDD;
 	}
-	
-	/**
-	 * Post processing operation. Done in parallel.
-	 * </br>
-	 * Sorts the trajectory points by time stamp
-	 * and removes any duplicates from the map phase.
-	 * </br>
-	 * Map the post-process trajectories to a tree
-	 * of trajectories MBR
-	 * 
-	 * @return A post-processed RDD of trajectories
-	 */
-/*	private TrajectoryRTree postProcessAsTree(
-			JavaRDD<Trajectory> trajectoryRDD){
-		// post-process the trajectory and build the MBR tree
-		TrajectoryRTree emptyTree = new TrajectoryRTree();
-		Function2<TrajectoryRTree, Trajectory, TrajectoryRTree> seqOp = 
-				new Function2<TrajectoryRTree, Trajectory, TrajectoryRTree>() {
-			// add each post-processed trajectory to the tree
-			public TrajectoryRTree call(TrajectoryRTree tree, Trajectory t) throws Exception {
-				tree.add(postProcess(t));
-				return tree;
-			}
-		}; 
-		Function2<TrajectoryRTree, TrajectoryRTree, TrajectoryRTree> combOp = 
-				new Function2<TrajectoryRTree, TrajectoryRTree, TrajectoryRTree>() {
-			// merge the trees
-			public TrajectoryRTree call(TrajectoryRTree tree1, TrajectoryRTree tree2) throws Exception {
-				return tree1.merge(tree2);
-			}
-		};
-		trajectoryRDD.aggregate(emptyTree, seqOp, combOp)
-			 
-		return trajectoryRDD;
-	}*/
 
 }

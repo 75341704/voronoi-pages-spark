@@ -66,12 +66,12 @@ public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
 				new PairFunction<String, String, PageIndexSet>() {
 			public Tuple2<String, PageIndexSet> call(String tuple) throws Exception {
 				// read a table tuple as string
-				String[] tokens = tuple.split(",");
+				String[] tokens = tuple.split(("\\(|,|\\)"));
 				// trajectory id
-				String id = tokens[0];
+				String id = tokens[1];
 				// read page index set
 				PageIndexSet set = new PageIndexSet();
-				for(int i=1; i<tokens.length; i+=2){
+				for(int i=2; i<tokens.length; i+=2){
 					int VSI = Integer.parseInt(tokens[i]);
 					int TPI = Integer.parseInt(tokens[i+1]);
 					set.add(new PageIndex(VSI, TPI));

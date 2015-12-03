@@ -21,7 +21,7 @@ import uq.spatial.Trajectory;
  *
  */
 @SuppressWarnings("serial")
-public class DatasetStatisticsService implements Serializable, SparkEnvInterface{
+public class DataStatisticsService implements Serializable, SparkEnvInterface{
 
 	/**
 	 * Number of trajectories in this dataset (RDD count).
@@ -56,23 +56,24 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 	/**
 	 * Statistics about length of trajectories in this dataset.
 	 * 
-	 * @return A double vector containing the mean: [0], min: [1]
-	 * and max: [2] trajectories length in this dataset. 
+	 * @return A double vector containing the mean: [0], min: [1],
+	 * max: [2], and std: [3] trajectories length in this dataset. 
 	 */
 	public static double[] trajectoryLengthStats(JavaRDD<Trajectory> trajectoryRDD){
 		// total trajectories in this dataset
 		final double numTrajectories = numTrajectories(trajectoryRDD);
 	
-		// get mean, min and max length of trajectories
+		// get mean, min, max and std length of trajectories
 		double[] lenghtVector = 
 			trajectoryRDD.glom().map(new Function<List<Trajectory>, double[]>() {
 				public double[] call(List<Trajectory> tList) throws Exception {
-					double[] vec = new double[]{0.0,Double.MAX_VALUE,0.0};
+					double[] vec = new double[]{0.0,Double.MAX_VALUE,0.0,0.0};
 					for(Trajectory t : tList){
 						double lenght = t.length();
-						vec[0] += lenght; 
+						vec[0] += lenght;
 						vec[1] = Math.min(vec[1], lenght); 
-						vec[2] = Math.max(vec[2], lenght); ;
+						vec[2] = Math.max(vec[2], lenght); 
+						vec[3] += (lenght*lenght);
 					}
 					return vec;
 				}
@@ -81,35 +82,41 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 					vec1[0] = vec1[0] + vec2[0];
 					vec1[1] = Math.min(vec1[1], vec2[1]);
 					vec1[2] = Math.max(vec1[2], vec2[2]);
+					vec1[3] = vec1[3] + vec2[3];
 					return vec1;
 				}
 			});
+		// get std
+		lenghtVector[3] = (lenghtVector[3] - 
+				(1/numTrajectories)*(lenghtVector[0]*lenghtVector[0]));
+		lenghtVector[3] = Math.sqrt(lenghtVector[3]/numTrajectories);
 		// get mean
 		lenghtVector[0] = lenghtVector[0]/numTrajectories;
-
+		
 		return lenghtVector;
 	}
 	
 	/**
 	 * Statistics about duration of trajectories in this dataset.
 	 * 
-	 * @return A double vector containing the mean: [0], min: [1]
-	 * and max: [2] trajectories duration (time) in this dataset. 
+	 * @return A double vector containing the mean: [0], min: [1],
+	 * max: [2], adn std: [3] trajectories duration (time) in this dataset. 
 	 */
 	public static double[] trajectoryDurationStats(JavaRDD<Trajectory> trajectoryRDD){
 		// total trajectories in this dataset
 		final double numTrajectories = numTrajectories(trajectoryRDD);		
 
-		// get mean, min and max duration of trajectories
+		// get mean, min, max and std duration of trajectories
 		double[] durationVector = 
 			trajectoryRDD.glom().map(new Function<List<Trajectory>, double[]>() {
 				public double[] call(List<Trajectory> tList) throws Exception {
-					double[] vec = new double[]{0.0,Double.MAX_VALUE,0.0};
+					double[] vec = new double[]{0.0,Double.MAX_VALUE,0.0,0.0};
 					for(Trajectory t : tList){
 						double duration = t.duration();
 						vec[0] += duration; 
 						vec[1] = Math.min(vec[1], duration); 
-						vec[2] = Math.max(vec[2], duration); ;
+						vec[2] = Math.max(vec[2], duration);						
+						vec[3] += (duration*duration);
 					}
 					return vec;
 				}
@@ -118,9 +125,14 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 					vec1[0] = vec1[0] + vec2[0];
 					vec1[1] = Math.min(vec1[1], vec2[1]);
 					vec1[2] = Math.max(vec1[2], vec2[2]);
+					vec1[3] = vec1[3] + vec2[3];
 					return vec1;
 				}
 			});
+		// get std
+		durationVector[3] = (durationVector[3] - 
+				(1/numTrajectories)*(durationVector[0]*durationVector[0]));
+		durationVector[3] = Math.sqrt(durationVector[3]/numTrajectories);
 		// get mean
 		durationVector[0] = durationVector[0]/numTrajectories;
 
@@ -141,12 +153,13 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 		double[] speedVector = 
 			trajectoryRDD.glom().map(new Function<List<Trajectory>, double[]>() {
 				public double[] call(List<Trajectory> tList) throws Exception {
-					double[] vec = new double[]{0.0,Double.MAX_VALUE,0.0};
+					double[] vec = new double[]{0.0,Double.MAX_VALUE,0.0,0.0};
 					for(Trajectory t : tList){
 						double speed = t.speed();
 						vec[0] += speed; 
 						vec[1] = Math.min(vec[1], speed); 
 						vec[2] = Math.max(vec[2], speed);
+						vec[3] += (speed*speed);
 					}
 					return vec;
 				}
@@ -155,9 +168,14 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 					vec1[0] = vec1[0] + vec2[0];
 					vec1[1] = Math.min(vec1[1], vec2[1]);
 					vec1[2] = Math.max(vec1[2], vec2[2]);
+					vec1[3] = vec1[3] + vec2[3];
 					return vec1;
 				}
 			});
+		// get std
+		speedVector[3] = (speedVector[3] - 
+				(1/numTrajectories)*(speedVector[0]*speedVector[0]));
+		speedVector[3] = Math.sqrt(speedVector[3]/numTrajectories);
 		// get mean
 		speedVector[0] = speedVector[0]/numTrajectories;
 
@@ -167,23 +185,24 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 	/**
 	 * Statistics about sampling rate of trajectories in this dataset.
 	 * 
-	 * @return A double vector containing the mean: [0], min: [1]
-	 * and max: [2] trajectories average sampling rate in this dataset. 
+	 * @return A double vector containing the mean: [0], min: [1],
+	 * max: [2], and std: [3] trajectories average sampling rate in this dataset. 
 	 */
 	public static double[] trajectorySamplingRateStats(JavaRDD<Trajectory> trajectoryRDD){
 		// total trajectories in this dataset
 		final double numTrajectories = numTrajectories(trajectoryRDD);
 		
-		// get mean, min and max sampling rates
+		// get mean, min, max and std sampling rates
 		double[] rateVector =
 			trajectoryRDD.glom().map(new Function<List<Trajectory>, double[]>() {
 				public double[] call(List<Trajectory> tList) throws Exception {
-					double[] vec = new double[]{0.0,Double.MAX_VALUE,0.0};
+					double[] vec = new double[]{0.0,Double.MAX_VALUE,0.0,0.0};
 					for(Trajectory t : tList){
 						double rate = t.samplingRate();
 						vec[0] += rate; 
 						vec[1] = Math.min(vec[1], rate); 
 						vec[2] = Math.max(vec[2], rate);
+						vec[3] += (rate*rate);
 					}
 					return vec;
 				}
@@ -192,9 +211,14 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 					vec1[0] = vec1[0] + vec2[0];
 					vec1[1] = Math.min(vec1[1], vec2[1]);
 					vec1[2] = Math.max(vec1[2], vec2[2]);
+					vec1[3] = vec1[3] + vec2[3];
 					return vec1;
 				}
 			});
+		// get std
+		rateVector[3] = (rateVector[3] - 
+				(1/numTrajectories)*(rateVector[0]*rateVector[0]));
+		rateVector[3] = Math.sqrt(rateVector[3]/numTrajectories);
 		// get mean
 		rateVector[0] = rateVector[0]/numTrajectories;
 
@@ -205,24 +229,24 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 	 * Statistics about the average number of the points per 
 	 * trajectory in this dataset.
 	 * 
-	 * @return A double vector containing the mean: [0], min: [1]
-	 * and max: [2] average points per trajectory in this dataset. 
+	 * @return A double vector containing the mean: [0], min: [1],
+	 * max: [2], std: [3] average points per trajectory in this dataset. 
 	 */
 	public static double[] trajectoryNumberOfPointsStats(JavaRDD<Trajectory> trajectoryRDD){
 		// total trajectories in this dataset
 		final double numTrajectories = numTrajectories(trajectoryRDD);
 
-		// get mean, min and max number of points 
+		// get mean, min, max and std number of points 
 		double[] numPtsVector = 
 			trajectoryRDD.glom().map(new Function<List<Trajectory>, double[]>() {
-
 				public double[] call(List<Trajectory> tList) throws Exception {
-					double[] vec = new double[]{0.0,Double.MAX_VALUE,0.0};
+					double[] vec = new double[]{0.0,Double.MAX_VALUE,0.0,0.0};
 					for(Trajectory t : tList){
 						double numPts = t.size();
 						vec[0] += numPts; 
 						vec[1] = Math.min(vec[1], numPts); 
 						vec[2] = Math.max(vec[2], numPts);
+						vec[3] += (numPts*numPts);
 					}
 					return vec;
 				}
@@ -231,9 +255,14 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 					vec1[0] = vec1[0] + vec2[0];
 					vec1[1] = Math.min(vec1[1], vec2[1]);
 					vec1[2] = Math.max(vec1[2], vec2[2]);
+					vec1[3] = vec1[3] + vec2[3];
 					return vec1;
 				}
 			});
+		// get std
+		numPtsVector[3] = (numPtsVector[3] - 
+				(1/numTrajectories)*(numPtsVector[0]*numPtsVector[0]));
+		numPtsVector[3] = Math.sqrt(numPtsVector[3]/numTrajectories);
 		//get mean
 		numPtsVector[0] = numPtsVector[0]/numTrajectories;
 
@@ -245,7 +274,7 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 	 * </br>
 	 * Save as "dataset-statistics" in the HDFS output folder.
 	 */
-	public static void saveDatasetStatistics(JavaRDD<Trajectory> trajectoryRDD){
+	public static void saveStatistics(JavaRDD<Trajectory> trajectoryRDD){
      	long numTraj = numTrajectories(trajectoryRDD);
      	long numPts = numTrajectoryPoints(trajectoryRDD);
      	double[] avgPts = trajectoryNumberOfPointsStats(trajectoryRDD);
@@ -261,18 +290,23 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
      	script += "Avg. Number of Points per Trajectory: " + avgPts[0] + "\n";
      	script += "Min. Number of Points per Trajectory: " + avgPts[1] + "\n";
      	script += "Max. Number of Points per Trajectory: " + avgPts[2] + "\n";
+     	script += "Std. Number of Points per Trajectory: " + avgPts[3] + "\n";
      	script += "Avg. Trajectory Length: " + avgLen[0] + "\n";
      	script += "Min. Trajectory Length: " + avgLen[1] + "\n";
      	script += "Max. Trajectory Length: " + avgLen[2] + "\n";
+     	script += "Std. Trajectory Length: " + avgLen[3] + "\n";
      	script += "Avg. Trajectory Duration: " + avgDur[0] + "\n";
      	script += "Min. Trajectory Duration: " + avgDur[1] + "\n"; 
      	script += "Max. Trajectory Duration: " + avgDur[2] + "\n"; 
+     	script += "Std. Trajectory Duration: " + avgDur[3] + "\n"; 
      	script += "Avg. Trajectory Speed: " + avgSpeed[0] + "\n";
      	script += "Min. Trajectory Speed: " + avgSpeed[1] + "\n";
      	script += "Max. Trajectory Speed: " + avgSpeed[2] + "\n";
+     	script += "Std. Trajectory Speed: " + avgSpeed[3] + "\n";
      	script += "Avg. Sampling Rate: " + avgRate[0] + "\n";
      	script += "Min. Sampling Rate: " + avgRate[1] + "\n";
-     	script += "Max. Sampling Rate: " + avgRate[2];
+     	script += "Max. Sampling Rate: " + avgRate[2] + "\n";
+     	script += "Std. Sampling Rate: " + avgRate[3];
      	
      	// save to HDFS
      	HDFSFileService hdfs = new HDFSFileService();
@@ -288,7 +322,7 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 	 * </br>
 	 * Save as "dataset-statistics-histogram" in the HDFS output folder.
 	 */
-	public static void saveDatasetStatisticsHist(JavaRDD<Trajectory> trajectoryRDD){
+	public static void saveStatisticsAsHist(JavaRDD<Trajectory> trajectoryRDD){
 		// id, num pts, length, duration, speed, sampling rate
 		List<String> emptyList = new LinkedList<String>();
 		Function2<List<String>, Trajectory, List<String>> seqOp = 
@@ -330,7 +364,7 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
 		System.out.println("Running Dataset Statistics..\n");
 		
     	// read trajectory data files
-     	JavaRDD<String> fileRDD = SC.textFile(DATA_PATH);
+     	JavaRDD<String> fileRDD = SC.textFile(DATA_PATH, NUM_PARTITIONS_DATA);
      	//fileRDD.persist(StorageLevel.MEMORY_AND_DISK());
      	
      	// convert the input dataset to trajectory objects (read the dataset in lat/lon)
@@ -338,8 +372,8 @@ public class DatasetStatisticsService implements Serializable, SparkEnvInterface
      	JavaRDD<Trajectory> trajectoryRDD = rddService.mapRawDataToTrajectoryRDD(fileRDD);
    	
      	// calculate and save statistics to HDFS
-     	saveDatasetStatistics(trajectoryRDD);
-     	saveDatasetStatisticsHist(trajectoryRDD);
+     	saveStatistics(trajectoryRDD);
+     	//saveDatasetStatisticsHist(trajectoryRDD);
      	
      	// clear cache
      	fileRDD.unpersist();
