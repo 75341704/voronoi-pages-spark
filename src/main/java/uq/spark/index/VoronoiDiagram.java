@@ -136,10 +136,29 @@ public final class VoronoiDiagram implements Serializable, SparkEnvInterface {
 	}
 	
 	/**
-	 * Retrieve all  Voronoi polygons that overlap with this trajectory.
+	 * Retrieve the closest Voronoi polygons from this 
+	 * trajectory sample points.
 	 * 
 	 * @return A set of polygons ID
 	 */
+	public HashSet<Integer> getClosestPolygons(Trajectory q) {
+		HashSet<Integer> polySet = new HashSet<Integer>();
+		double dist, minDist = INF;
+		int id = 0;
+		// check the closest pivot from each point
+		for(Point p : q.getPointsList()){
+			for(Point piv : pivotList){
+				dist = p.dist(piv);
+				if(dist < minDist){
+					minDist = dist;
+					id = piv.pivotId;
+				}
+			}
+			polySet.add(id);
+		}
+		return polySet;
+	}
+/*	@Deprecated
 	public HashSet<Integer> getOverlapingPolygons(Trajectory q) {
 		HashSet<Integer> polySet = new HashSet<Integer>();
 		for(VoronoiPolygon vp : polygonsList){

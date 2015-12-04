@@ -71,10 +71,7 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 	public NearNeighbor runNearestNeighborQuery(
 			final Trajectory q, 
 			final long t0, final long t1){
-		if(!runKNearestNeighborsQuery(q, t0, t1, 1).isEmpty()){
-			return runKNearestNeighborsQuery(q, t0, t1, 1).get(0);
-		}
-		return null;
+		return runKNearestNeighborsQuery(q, t0, t1, 1).get(0);
 	}
 	
 	/**
@@ -96,7 +93,7 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 		// retrieve candidate polygons IDs = VSIs
 		// check for polygons that overlaps with Q
 		HashSet<Integer> candidatePolygons = 
-				diagram.value().getOverlapingPolygons(q);
+				diagram.value().getClosestPolygons(q);
 
 		// for every polygon that overlap with Q, 
 		// add their neighbors to the candidates list
@@ -113,23 +110,16 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 		// collect candidate trajectories inside the given pages (whole trajectories)
 		JavaRDD<Trajectory> candidateRDD = 
 				collector.collectTrajectoriesByPageIndex(candidatePolygons, TPIini, TPIend);	
-		
+
 		/*******************
 		 * FIRST REFINEMENT:
 		 *******************/
 		// get first candidates
 		List<NearNeighbor> candidatesList = new LinkedList<NearNeighbor>();
 		candidatesList = getCandidatesNN(candidateRDD, candidatesList, q, t0, t1);
-		// gambiarra
-		if(candidatesList.isEmpty()){
-			return new ArrayList<NearNeighbor>();
-		}
+
 		// if this is a 1-NN query, return the first
 		if(k == 1){
-			// make sure this is not the query trajectory
-			if(!candidatesList.get(0).id.equals(q.id)){
-				return candidatesList.subList(0, 1);
-			}
 			return candidatesList.subList(1, 2);
 		} 
 		
@@ -153,11 +143,11 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 					trackTable.collectPageIndexListByTrajectoryId(nn_i.id);
 			neighbors = new HashSet<Integer>();
 			for(PageIndex index : nnIndexList){
-				// add new poly
+				// add new polygons
 				if(!candidatePolygons.contains(index.VSI)){
 					neighbors.add(index.VSI);
 				}
-				// add new adjacent poly
+				// add adjacent of new polygons
 				for(int vsi : diagram.value().getPolygonByPivotId(index.VSI).getAdjacentList()){
 					if(!candidatePolygons.contains(vsi)){
 						neighbors.add(vsi);
@@ -171,7 +161,7 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 				// pages (whole trajectories)
 				candidateRDD = 
 						collector.collectTrajectoriesByPageIndex(neighbors, TPIini, TPIend);
-
+				
 				/*******************
 				 * SECOND REFINEMENT:
 				 *******************/
@@ -210,7 +200,7 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 		// retrieve candidate polygons IDs = VSIs
 		// check for polygons that overlaps with Q
 		HashSet<Integer> candidatePolygons = 
-				diagram.value().getOverlapingPolygons(q);
+				diagram.value().getClosestPolygons(q);
 
 		// for every polygon that overlap with Q, 
 		// add their neighbors to the candidates list
@@ -272,49 +262,29 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 			final List<NearNeighbor> currentList,
 			final Trajectory q,
 			final long t0, final long t1){
-		// filter out new trajectories
-		JavaRDD<Trajectory> filteredRDD;
-		if(currentList.isEmpty()){
-			// gambiarra
-			if(candidateRDD == null){
-				filteredRDD = candidateRDD;
-			} else{
-				filteredRDD = candidateRDD.filter(new Function<Trajectory, Boolean>() {
-					public Boolean call(Trajectory t) throws Exception {
-						if(t.timeIni() > t1 || t.timeEnd() < t0){
-							return false;
-						} return true;
+
+		List<NearNeighbor> nnCandidatesList = 
+			// filter out new trajectories, and refine time
+			candidateRDD.filter(new Function<Trajectory, Boolean>() {
+				public Boolean call(Trajectory t) throws Exception {
+					if(t.timeIni() > t1 || t.timeEnd() < t0){
+						return false;
 					}
-				});
-			}
-		} else{
-			filteredRDD = 
-				candidateRDD.filter(new Function<Trajectory, Boolean>() {
-					public Boolean call(Trajectory t) throws Exception {
-						if(t.timeIni() > t1 || t.timeEnd() < t0){
-							return false;
-						}
-						return (!currentList.contains(t));
-					}
-				});
-		}
-		// gambiarra
-		if(filteredRDD != null){
+					return (!currentList.contains(t));
+				}
 			// map each new trajectory in the candidates list to a NN
-			List<NearNeighbor> newCandidatesList = 
-				filteredRDD.map(new Function<Trajectory, NearNeighbor>() {
-					public NearNeighbor call(Trajectory t) throws Exception {
-						NearNeighbor nn = new NearNeighbor(t);
-						nn.distance = distService.EDwP(q, t);
-						return nn;
-					}
-				}).collect();
-			// add the new candidates
-			currentList.addAll(newCandidatesList);
-			
-			// sort by distance to Q
-			Collections.sort(currentList, nnComparator);		
-		}
+			}).map(new Function<Trajectory, NearNeighbor>() {
+				public NearNeighbor call(Trajectory t) throws Exception {
+					NearNeighbor nn = new NearNeighbor(t);
+					nn.distance = distService.EDwP(q, t);
+					return nn;			}
+			}).collect();
+		// add new candidates
+		currentList.addAll(nnCandidatesList);
+		// sort by distance to Q
+		Collections.sort(currentList, nnComparator);
+		
 		return currentList;
 	}
+
 }

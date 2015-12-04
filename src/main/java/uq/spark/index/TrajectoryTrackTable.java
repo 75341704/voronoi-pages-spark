@@ -1,8 +1,8 @@
 package uq.spark.index;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 
 import org.apache.spark.api.java.JavaPairRDD;
@@ -200,24 +200,50 @@ public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
 	 * Average number of pages per trajectory 
 	 * (after the map phase).
 	 */
-	public double avgPagesPerTrajectory(){
-		final double numTrajectories = count();
-		// map each tuple (trajectory) to its number of pages
-		final double total = 
-			trajectoryTrackTableRDD.values().glom().map(new Function<List<PageIndexSet>, Integer>() {
-				public Integer call(List<PageIndexSet> setList) throws Exception {
-					int count = 0;
-					for(HashSet<PageIndex> set : setList){
-						count += set.size();
+	/**
+	 * Return a vector with some statistical information about
+	 * the number of pages per trajectory in this RDD.
+	 * 
+	 * @return A double vector containing the mean: [0], min: [1],
+	 * max: [2], and std: [3] number of pages per trajectory
+	 * in this RDD.
+	 */
+	public double[] pagesPerTrajectoryInfo(){
+		// total number of tuple
+		final double total = count();
+		
+		// get mean, min, max and std number of pages per trajectory
+		double[] count = 
+			trajectoryTrackTableRDD.values().glom().map(
+					new Function<List<PageIndexSet>, double[]>() {
+				public double[] call(List<PageIndexSet> list) throws Exception {
+					double[] vec = new double[]{0.0,INF,0.0,0.0};
+					for(PageIndexSet set : list){
+						long count = set.size();
+						vec[0] += count;
+						vec[1] = Math.min(vec[1], count); 
+						vec[2] = Math.max(vec[2], count); 
+						vec[3] += (count*count);
 					}
-					return count;
+					return vec;
 				}
-			}).reduce(new Function2<Integer, Integer, Integer>() {
-				public Integer call(Integer v1, Integer v2) throws Exception {
-					return (v1 + v2);
+			}).reduce(new Function2<double[], double[], double[]>() {
+				public double[] call(double[] vec1, double[] vec2) throws Exception {
+					vec1[0] = vec1[0] + vec2[0];
+					vec1[1] = Math.min(vec1[1], vec2[1]);
+					vec1[2] = Math.max(vec1[2], vec2[2]);
+					vec1[3] = vec1[3] + vec2[3];
+					return vec1;
 				}
 			});
-		return (total / numTrajectories);
+		// get std
+		count[3] = (count[3] - 
+				(1/total)*(count[0]*count[0]));
+		count[3] = Math.sqrt(count[3]/total);
+		// get mean
+		count[0] = count[0]/total;
+		
+		return count;		
 	}
 	
 	/**
@@ -228,21 +254,31 @@ public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
 	}
 
 	/**
-	 * Save track table info. 
+	 * Save track table statistical information. 
 	 * Save to HDFS output folder as "trajectory-track-table-info"
 	 */
 	public void saveTableInfo(){
-		List<String> infoList = 
+		double[] tupleInfo = pagesPerTrajectoryInfo();
+		
+		List<String> info = new ArrayList<String>();
+		info.add("Number of Table Tuples: " + count());
+		info.add("Number of RDD Partitions: " + getNumPartitions());
+		info.add("Avg. Pages per Trajectory: " + tupleInfo[0]);
+		info.add("Min. Pages per Trajectory: " + tupleInfo[1]);
+		info.add("Max. Pages per Trajectory: " + tupleInfo[2]);
+		info.add("Std. Pages per Trajectory: " + tupleInfo[3]);
+
+		/*info.addAll(
 				trajectoryTrackTableRDD.map(new Function<Tuple2<String,PageIndexSet>, String>() {
 			public String call(Tuple2<String, PageIndexSet> tuple) throws Exception {
 				String info = tuple._1 + ": " + tuple._2.size() + " pages.";
 				return info;
 			}
-		}).collect();
+		}).collect());*/
 
 		// save to hdfs
 		HDFSFileService hdfs = new HDFSFileService();
-		hdfs.saveStringListHDFS(infoList, "trajectory-track-table-info");
+		hdfs.saveStringListHDFS(info, "trajectory-track-table-info");
 	}
 	
 	/**

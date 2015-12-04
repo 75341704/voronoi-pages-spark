@@ -3,7 +3,6 @@ package uq.spark.index;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.spark.api.java.JavaPairRDD;
@@ -480,7 +479,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 		double[] trInfo = subTrajectoriesPerPageInfo();
 		double[] ptInfo = pointsPerPageInfo();
 		
-		List<String> info = new LinkedList<String>();
+		List<String> info = new ArrayList<String>();
 		info.add("Number of Voronoi Pages: " + count());
 		info.add("Number of RDD Partitions: " + getNumPartitions());
 		info.add("Total Number of Sub-Trajectories: " + getNumSubTrajectories());
@@ -494,7 +493,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 		info.add("Max. Points per Page: " + ptInfo[2]);
 		info.add("Std. Points per Page: " + ptInfo[3]);
 
-		info.addAll( 
+		/*info.addAll( 
 			voronoiPagesRDD.values().map(new Function<Page, String>() {
 				public String call(Page page) throws Exception {
 					String script = "";
@@ -504,7 +503,7 @@ public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexPa
 					script += page.getPointsList().size() + " points.";		
 					return script;
 				}
-			}).collect());
+			}).collect());*/
 
 		// save to hdfs
 		HDFSFileService hdfs = new HDFSFileService();

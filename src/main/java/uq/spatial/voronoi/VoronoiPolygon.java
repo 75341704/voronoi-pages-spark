@@ -118,7 +118,7 @@ public class VoronoiPolygon implements Serializable, GeoInterface {
 
 		/**
 		 * Return the list of edges of this polygon 
-		 * in Clockwise order (copy of the edges).
+		 * in Clockwise order.
 		 */
 		public List<VoronoiEdge> getEdgeListClockwise(){
 			List<VoronoiEdge> edgesClockwise = 
@@ -150,7 +150,7 @@ public class VoronoiPolygon implements Serializable, GeoInterface {
 					edgesClockwise.add(edge);
 				}
 			} 
-			if(vertexes.size() > 2){ // only if there is more than 2 vertexes
+			if(vertexes.size() > 2){ // only if there are more than 2 vertexes
 				// the edge connection the last to the first vertex
 				x1 = vertexes.get(vertexes.size()-1).x;
 				y1 = vertexes.get(vertexes.size()-1).y;
@@ -168,12 +168,13 @@ public class VoronoiPolygon implements Serializable, GeoInterface {
 		 * True is this polygon contains the given point inside its perimeter.
 		 * Check if the point lies inside the polygon area.
 		 */
+/*		@Deprecated
 		public boolean contains(Point p) {			
 			// because the polygon may not be closed,  we must
 			// check the sideness. The point must be in the same 
 			// side of all edges.
 
-			// get a list os vertex in clockwise order, for each
+			// get a list of edges in clockwise order, for each
 			// edge check the cross product signal
 			List<VoronoiEdge> edgeList = 
 					getEdgeListClockwise();
@@ -183,25 +184,25 @@ public class VoronoiPolygon implements Serializable, GeoInterface {
 				double v1y = e.y2 - e.y1;
 				double v2x = p.x - e.x1;
 				double v2y = p.y - e.y1;
-				
+				// cross product det
 				double cross = v1x*v2y - v1y*v2x;
 				
-				// cross product must be negative always
+				// cross product det must be negative always
 				if(cross >= 0.0 ){
 					return false;
 				}
 			}
 			return true;
 		}
-		
+*/		
 		/**
 		 * True is this Voronoi Polygon overlaps with the given Circle.
 		 */
 		public boolean overlap(Circle circle){
 			// check if the circle center is inside the polygon.
-			if(contains(circle.center())){ 
+			/*if(contains(circle.center())){ 
 				return true;
-			}
+			}*/
 			// check if any of the polygon's vertices are inside the circle
 			for(Point p : this.getVertexList()){
 				if(circle.contains(p)){ 
@@ -231,12 +232,12 @@ public class VoronoiPolygon implements Serializable, GeoInterface {
 			if(box.contains(this.pivot)){ 
 				return true;
 			}
-			// check if the any of the box vertexes are inside the polygon
-			for(Point p : box.getVertexList()){
+			// check if any of the box vertexes are inside the polygon
+			/*for(Point p : box.getVertexList()){
 				if(this.contains(p)){ 
 					return true;
 				}
-			}
+			}*/
 			// check for edge intersections
 			// check if any of the polygon's edges intersect the box
 			for(VoronoiEdge edge : edges){

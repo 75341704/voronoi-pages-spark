@@ -73,7 +73,7 @@ public class PartitioningIndexingService implements Serializable, SparkEnvInterf
     	 */
     	// trajectory data files (from the HDFS folder)
      	JavaRDD<String> fileRDD = SC.textFile(DATA_PATH, NUM_PARTITIONS_DATA);
-     	fileRDD.persist(STORAGE_LEVEL_PARTITIONIG);
+     	fileRDD.persist(STORAGE_LEVEL_PARTITIONIG);   	
      	
      	/**
      	 * BUILD THE VORONOI DIAGRAM
@@ -82,8 +82,7 @@ public class PartitioningIndexingService implements Serializable, SparkEnvInterf
 		HDFSFileService hdfsService = 
 				new HDFSFileService();
      	// Generate the diagram and broadcast.
- 		VoronoiDiagram diagram = new VoronoiDiagram();
- 		diagram.build(hdfsService.readPivotsHDFS(K));
+ 		VoronoiDiagram diagram = new VoronoiDiagram(hdfsService.readPivotsHDFS(K));
      	voronoiDiagram = SC.broadcast(diagram);
   	
 		/**

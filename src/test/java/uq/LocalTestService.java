@@ -51,193 +51,22 @@ public class LocalTestService  extends TestCase {
 			new PartitioningAroundMedoids();
 	
 	public static void main(String[] args) { 
+	/*	
+		VoronoiPolygon vp = new VoronoiPolygon(new Point(5,5));
+		vp.addEdge(new VoronoiEdge(0, 0, 10, 0));
+		vp.addEdge(new VoronoiEdge(10, 10, 0, 10));
+		vp.addEdge(new VoronoiEdge(0, 0, 0, 10));
+		vp.addEdge(new VoronoiEdge(10, 10, 10, 0));
 
-		/*
-		Trajectory traj = FileService.readSparkTrajectoryById("T10");
-		System.out.println("Trajectory Size: " + traj.size());
-		System.out.println("Trajectory Length: " + traj.length());
-		*/
+		Point p = new Point(5,15);
 		
-		/*
-		ArrayList<Trajectory> trajList = 
-	    		FileService.generateSyntheticTrajectories(10000, 50, 100, 200); 
-	    FileService.saveTrajectoriesFiles(trajList, 1000);
-	    System.out.println("Finished");
-		 */
-		
-		/*
-		// test select Medoids
-		long begin = System.currentTimeMillis();
-		
-		ArrayList<Point> samplePoints = 
-				FileService.readSparkTrajectoriesAsPointList();
-		for(Point p : samplePoints){
-			System.out.println(p.x + ", " + p.y + ", " + p.time);
-		}
-		System.out.println("\n Size: " + samplePoints.size());
-		
-		long endRead = System.currentTimeMillis();  
-		
-		System.out.println("\n Running PAM..");
-		Integer[] medoids = PAM.selectKInitialMedoids(10, samplePoints);
-		
-		long endSelect = System.currentTimeMillis(); 
-		
-		// Given the IDs, select the medoids (points)
-		System.out.println("Selected Medoids:");
-		for(int i=0; i<medoids.length; i++){
-			Point p = samplePoints.get(medoids[i]);
-			System.out.println(medoids[i] + ": (" + p.x + "," + p.y + "," + p.time + ")");
-		}
-		
-		System.out.println();
-		System.out.println("Took: " + (endRead - begin) + " milliseconds to read data.");
-		System.out.println("Took: " + (endSelect - endRead) + " milliseconds to select medoids.");
-		 */
-		
-		/*
-		// test TrajectoryTrackTable
-		TrajectoryTrackTable tb = new TrajectoryTrackTable();
-		tb.add("T1", 1); 
-		tb.add("T1", 2); 
-		tb.add("T1", 5); 
-		tb.add("T1", 2); 
-		tb.add("T1", 1); 
-		
-		tb.add("T2", 2); 
-		tb.add("T2", 4);
-		tb.add("T2", 4);
-		tb.add("T2", 3);
-		
-		tb.add("T3", 3);
-		
-		tb.print();
-		*/
-
-		/*
-		// test HashSet 
-		HashSet<Index> hash = new HashSet<Index>();
-		Index i1 = new Index(1, 1);
-		Index i2 = new Index(1, 2);
-		Index i3 = new Index(2, 1);
-		Index i4 = new Index(2, 2);
-		Index i5 = new Index(1, 1);
-		Index i6 = new Index(2, 2);
-		hash.add(i1);
-		hash.add(i2);
-		hash.add(i3);
-		hash.add(i4);
-		hash.add(i5);
-		hash.add(i6);
-		
-		Iterator<Index> itr = hash.iterator();
-		Index i;
-		while(itr.hasNext()){
-			i = itr.next();
-			System.out.println("(" + i.VSI + "," + i.TPI + ")");
-		}
-		*/
-		
-		/*
-		// test MBR
-		Point p1 = new Point(0, 3, 0);
-		Point p2 = new Point(1, 4, 0);
-		Point p3 = new Point(1, 0, 0);
-		Point p4 = new Point(2, 2, 0);
-		Point p5 = new Point(3, 1, 0);
-		Trajectory t = new Trajectory();
-		t.addPoint(p1);
-		t.addPoint(p2);
-		t.addPoint(p3);
-		t.addPoint(p4);
-		t.addPoint(p5);
-		
-		MBR mbr = t.MBR();
-		mbr.print();
-		*/
-		
-		/*
-		// test tree
-		TreeSet<Point> pivotsTree = new TreeSet<Point>();
-		final Point p1 = new Point(0, 2, 0);
-		Point p2 = new Point(0, 0.5, 0);
-		Point p3 = new Point(-1, 0, 0);
-		Point p4 = new Point(0, 1, 0);
-		Point p5 = new Point(0, -1, 0);
-		Point p6 = new Point(1, 0, 0);
-		Point p7 = new Point(0, 3, 0);
-		
-		pivotsTree.add(p1);
-		pivotsTree.add(p2);
-		pivotsTree.add(p3);
-		pivotsTree.add(p4);
-		pivotsTree.add(p5);
-		pivotsTree.add(p6);
-		pivotsTree.add(p7);
-
-		System.out.println();
-		System.out.println("Pivots:");
-		for (Point p : pivotsTree) {
-			p.print();
-		}
-		System.out.println();
-		
-		// new comparator for the given point as origin
-		Comparator<Point> comparator = new Comparator<Point>() {
-			public int compare(Point o1, Point o2) {
-				if(o1.equals(o2)){
-					return 0;
-				}
-				if(o1.dist(p1) > o2.dist(p1)){
-					return 1;
-				}
-				return -1;
-			}
-		};
-				
-		// new sorted tree
-		TreeSet<Point> sortedTree = new TreeSet<Point>(comparator);
-
-		for(Point point : pivotsTree){
-			sortedTree.add(point);
-		}
-		System.out.println();
-		System.out.println("Pivots:");
-		for (Point p : sortedTree) {
-			p.print();
-		}
-		System.out.println();
-		*/
-		
-		/*
-		// test range selection
-		RangeQuery query = new RangeQuery();
-		MBR mbr = new MBR(25, 35, 0, 15);
-		
-		Point p1 = new Point(10, 10, 0);p1.pivotId=1;
-		Point p2 = new Point(10, 30, 0);p2.pivotId=2;
-		Point p3 = new Point(20, 20, 0);p3.pivotId=3;
-		Point p4 = new Point(30, 10, 0);p4.pivotId=4;
-		Point p5 = new Point(30, 30, 0);p5.pivotId=5;
-		List<Point> pivots = new ArrayList<Point>();
-		pivots.add(p1); pivots.add(p2); pivots.add(p3); pivots.add(p4); pivots.add(p5);
-		
-		query.runRangeQuery(mbr, 2, 6, pivots);
-		*/
-
-		
-	/*
-		// test edges intersection
-		VoronoiEdge ve = new VoronoiEdge(0, 0, 1, 1);
-		
-		if(ve.intersect(-1, 0.1, 2, 0.1)){
-			System.out.println("Yes, i intersect!");
+		if(vp.contains(p)){
+			System.out.println("Is Inside!");
 		} else{
 			System.out.println("Nope!");
 		}
-
-*/		
-/*		// test point in polygon
+		
+		// test point in polygon
 		VoronoiPolygon vp = new VoronoiPolygon(new Point(0,0));
 		vp.addEdge(new VoronoiEdge(0, 0, 1, 1));
 		vp.addEdge(new VoronoiEdge(1, 1, 2, 1));
@@ -624,13 +453,6 @@ public class LocalTestService  extends TestCase {
 		for(Trajectory t : list){
 			t.print();
 		}*/
-		
-		String s = "(T_10000018_1428224713_19569812763736438525,163,1190188,)";
-		String[] tokens = s.split(("\\(|,|\\)"));
-		for(String st : tokens){
-			System.out.println(st);
-		}
-		System.out.println("Size: " +tokens.length);
 	}
 	
 	/**

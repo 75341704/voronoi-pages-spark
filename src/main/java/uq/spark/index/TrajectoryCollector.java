@@ -374,5 +374,4 @@ public class TrajectoryCollector implements Serializable{
 			});
 		return trajectoryRDD;
 	}
-
 }

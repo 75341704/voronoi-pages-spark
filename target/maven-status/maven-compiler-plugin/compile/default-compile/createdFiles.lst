@@ -72,7 +72,6 @@ uq\spark\KryoClassRegistrator.class
 uq\spatial\clustering\MedoidComparator.class
 uq\fs\DataStatisticsService$11.class
 uq\spark\index\IndexParamInterface.class
-uq\spark\index\TrajectoryTrackTable$13.class
 uq\spatial\distance\EuclideanDistanceCalculator.class
 uq\fs\FileToObjectRDDService$1.class
 uq\spark\index\VoronoiPagesRDD$18.class
@@ -88,7 +87,6 @@ uq\spark\MySparkListener.class
 uq\exp\ExperimentsService$7.class
 uq\spatial\distance\DistanceService.class
 uq\spark\index\TrajectoryCollector$5.class
-uq\spark\query\NearestNeighborQuery$3.class
 uq\spark\index\TrajectoryTrackTable$3.class
 uq\fs\FileToObjectRDDService.class
 uq\spark\index\TrajectoryTrackTable$9.class
@@ -97,7 +95,6 @@ uq\spark\index\PartitioningIndexingService.class
 uq\spark\index\TrajectoryCollector$8.class
 uq\spark\index\TrajectoryTrackTable$6.class
 uq\spark\index\VoronoiPagesRDD$12.class
-uq\spark\index\VoronoiPagesRDD$22.class
 uq\spark\query\SelectionQuery$7.class
 uq\spark\query\NearNeighbor.class
 uq\spark\query\BruteForceQueryService$7.class

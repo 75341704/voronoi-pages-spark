@@ -22,6 +22,7 @@ import uq.spark.index.PartitioningIndexingService;
 import uq.spark.index.TrajectoryTrackTable;
 import uq.spark.index.VoronoiDiagram;
 import uq.spark.index.VoronoiPagesRDD;
+import uq.spark.query.NearNeighbor;
 import uq.spark.query.QueryProcessingService;
 import uq.spatial.GeoInterface;
 import uq.spatial.Point;
@@ -42,7 +43,7 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 	private static final Logger LOG = new Logger();
 	// experiment log file name
 	private static final String LOG_NAME = 
-			"experiments-8-nodes";// + K + "-" + TIME_WINDOW_SIZE + "s";
+			"experiments-mem-" + K + "-" + TIME_WINDOW_SIZE + "s";
 	/**
 	 * Main
 	 */
@@ -82,46 +83,19 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 		trajectoryTrackTable.load(TACHYON_PATH + "/index-structure/trajectory-track-table-rdd");
 
 		// save information regarding indexing
-/*		voronoiPagesRDD.savePagesInfo();
+		voronoiPagesRDD.savePagesInfo();
 		trajectoryTrackTable.saveTableInfo();
 */		
 		// action to force building the index
 		System.out.println("Num pages: " + voronoiPagesRDD.count());
 		System.out.println("Num TTT tuples: " + trajectoryTrackTable.count());
-
+		
 		/************************
 		 * QUERIES PROCESING 
 		 ************************/
 		QueryProcessingService queryService = new QueryProcessingService(
 				voronoiPagesRDD, trajectoryTrackTable, voronoiDiagram); 
 		
-		/******
-		 * K-NN QUERIES
-		 ******/
-		List<Trajectory> nnUseCases = readNearestNeighborUseCases();
-		{
-			LOG.appendln("NN Query Result:\n");
-			long nnQueryTime=0;
-			int queryId=1;
-			//int k = 10;
-			for(Trajectory t : nnUseCases){
-				System.out.println("Query " + queryId);
-				long start = System.currentTimeMillis();				
-				// run query
-				long tIni = t.timeIni();
-				long tEnd = t.timeEnd();
-				Trajectory result = queryService
-						.getNearestNeighbor(t, tIni, tEnd);
-				if(result != null){	
-					System.out.println("NN retornou: " + result.id);
-					long time = System.currentTimeMillis() - start;
-					LOG.appendln("NN Query " + queryId++ + ": " +  result.id + " in " + time + " ms.");
-					nnQueryTime += time;
-				}
-			}
-			LOG.appendln("NN query ends at: " + System.currentTimeMillis() + "ms.");
-			LOG.appendln("Total NN Time: " + nnQueryTime + " ms.\n");
-		}
 		/******
 		 * SPATIAL TEMPORAL SELECTION QUERIES (WHOLE)
 		 ******/
@@ -157,13 +131,59 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 				List<Trajectory> result = queryService
 						.getSpatialTemporalSelection(stObj, stObj.timeIni, stObj.timeEnd, false);
 				long time = System.currentTimeMillis()-start;
-				LOG.append("Query " + queryId++ + ": " + result.size() + " sub-trajectories in " + time + " ms.");
+				LOG.appendln("Query " + queryId++ + ": " + result.size() + " sub-trajectories in " + time + " ms.");
 				selecQueryTime += time;		
 			}
 			LOG.appendln("Spatial-Temporal Selection (Exact) ends at: " + System.currentTimeMillis() + "ms.");
 			LOG.appendln("Total Spatial-Temporal Selection Query Time: " + selecQueryTime + " ms.\n");
 		}
-		
+		/******
+		 * NN QUERIES
+		 ******/
+		List<Trajectory> nnUseCases = readNearestNeighborUseCases();
+		{
+			LOG.appendln("NN Query Result:\n");
+			long nnQueryTime=0;
+			int queryId=1;
+			for(Trajectory t : nnUseCases){
+				System.out.println("Query " + queryId);
+				long start = System.currentTimeMillis();				
+				// run query
+				long tIni = t.timeIni();
+				long tEnd = t.timeEnd();
+				Trajectory result = queryService
+						.getNearestNeighbor(t, tIni, tEnd);
+				long time = System.currentTimeMillis() - start;
+				LOG.appendln("NN Query " + queryId++ + ": " +  result.id + " in " + time + " ms.");
+				nnQueryTime += time;
+			}
+			LOG.appendln("NN query ends at: " + System.currentTimeMillis() + "ms.");
+			LOG.appendln("Total NN Time: " + nnQueryTime + " ms.\n");
+		}
+		/******
+		 * K-NN QUERIES
+		 ******/
+/*		{
+			LOG.appendln("K-NN Query Result:\n");
+			long nnQueryTime=0;
+			int queryId=1;
+			int k = 40;
+			for(Trajectory t : nnUseCases){
+				System.out.println("Query " + queryId);
+				long start = System.currentTimeMillis();				
+				// run query
+				long tIni = t.timeIni();
+				long tEnd = t.timeEnd();
+				List<NearNeighbor> resultList = queryService
+						.getKNearestNeighbors(t, tIni, tEnd, k);
+				long time = System.currentTimeMillis() - start;
+				LOG.appendln(k + "-NN Query " + queryId++ + ": " +  resultList.size() + " in " + time + " ms.");
+				nnQueryTime += time;
+			}
+			LOG.appendln(k + "-NN query ends at: " + System.currentTimeMillis() + "ms.");
+			LOG.appendln("Total " + k + "-NN Time: " + nnQueryTime + " ms.\n");
+		}		
+*/		
 		// save the result log to HDFS
 		LOG.save(LOG_NAME);
 		

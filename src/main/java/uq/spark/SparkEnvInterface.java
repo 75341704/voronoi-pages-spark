@@ -28,7 +28,7 @@ public interface SparkEnvInterface extends IndexParamInterface {
 	// path to data locally
 	static final String LOCAL_PATH =
 			"file:/home/uqdalves/my-data";
-	
+						
 	// path to the data set folders/files 
 	static final String DATA_PATH =
 			//"file:/media/bigdata/uqdalves/my-data/trajectory-data/sample-4gb";
@@ -69,7 +69,7 @@ public interface SparkEnvInterface extends IndexParamInterface {
 	static final int NUM_PARTITIONS_DATA = 250; // number of data blocks
 		
 	// number of reduce tasks for the indexing process
-	static final int NUM_PARTITIONS_PAGES = 4 * NUM_PARTITIONS_DATA;
+	static final int NUM_PARTITIONS_PAGES = NUM_PARTITIONS_DATA * 4;
 	
 	// number of reduce tasks for the indexing process
 	static final int NUM_PARTITIONS_TTT = NUM_PARTITIONS_DATA / 2;

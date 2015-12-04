@@ -55,13 +55,9 @@ public class CrossQuery implements Serializable, SparkEnvInterface {
 		// retrieve candidate polygons IDs = VSIs
 		// check for polygons that overlaps with Q
 		HashSet<Integer> candidatePolygons = 
-				diagram.value().getOverlapingPolygons(q);
-/*		
-		// Uses the trajectory bounding box to return 
-		// candidate trajectories.
-		Box region = q.mbr();
+				diagram.value().getClosestPolygons(q);
 
-		// run a selection query to return trajectories that
+/*		// run a selection query to return trajectories that
 		// overlap with the MBR of Q
 		SelectionQuery query = 
 				new SelectionQuery(pagesRDD, diagram);
@@ -104,11 +100,8 @@ public class CrossQuery implements Serializable, SparkEnvInterface {
 		// retrieve candidate polygons IDs = VSIs
 		// check for polygons that overlaps with Q
 		HashSet<Integer> candidatePolygons = 
-				diagram.value().getOverlapingPolygons(q);
-/*		// Uses the trajectory bounding box to return 
-		// candidate trajectories.
-		Box region = q.mbr();
-		
+				diagram.value().getClosestPolygons(q);
+/*		
 		// retrieve candidate polygons IDs = VSIs
 		// check for polygons that overlaps with the query range
 		List<Integer> candidatesVSI = 
