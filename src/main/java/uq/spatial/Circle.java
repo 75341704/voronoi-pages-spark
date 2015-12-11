@@ -90,22 +90,28 @@ public class Circle implements Serializable, GeoInterface {
 			double x1, double y1, 
 			double x2, double y2){
 		// triangle sides
-		double distP1 = EuclideanDistanceCalculator.getDistance(xCenter, yCenter, x1, y1);
-		double distP2 =	EuclideanDistanceCalculator.getDistance(xCenter, yCenter, x2, y2);
-		double base   = EuclideanDistanceCalculator.getDistance(x1, y1, x2, y2); 
+		double distP1 = EuclideanDistanceCalculator
+				.getDistance(xCenter, yCenter, x1, y1);
+		double distP2 =	EuclideanDistanceCalculator
+				.getDistance(xCenter, yCenter, x2, y2);
+		double base   = EuclideanDistanceCalculator
+				.getDistance(x1, y1, x2, y2); 
 		// triangle area
 		double p = (distP1 + distP2 + base) / 2;
 		double area = Math.sqrt(p*(p-distP1)*(p-distP2)*(p-base));
-		// use triangulation to calculate distance from the circle center to the segment
+		// use triangulation to calculate distance from 
+		// the circle center to the segment
 		double hight = 2 * area * base;
 		if(hight >= radius){
 			return false;
 		} 
-		// get distance between the center of the circle and the first endpoint
+		// get distance between the center of the circle 
+		// and the first endpoint
 		if(distP1 > radius){
 			return true;
 		}
-		// get distance between the center of the circle and the second endpoint
+		// get distance between the center of the circle 
+		//and the second endpoint
 		if(distP2 > radius){
 			return true;
 		}

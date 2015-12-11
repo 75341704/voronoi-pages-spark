@@ -42,7 +42,7 @@ public interface SparkEnvInterface extends IndexParamInterface {
 			HDFS_PATH + "/spark-data/trajectory-data/split2," +
 			HDFS_PATH + "/spark-data/trajectory-data/split3," +
 			HDFS_PATH + "/spark-data/trajectory-data/split4";
-			*/
+			*//**/
 			LOCAL_PATH + "/trajectory-data/split1," + 
 			LOCAL_PATH + "/trajectory-data/split2," +
 			LOCAL_PATH + "/trajectory-data/split3," +

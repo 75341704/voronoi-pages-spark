@@ -72,8 +72,8 @@ public class Box implements Serializable {
 	 * Point given by X and Y coordinates
 	 */
 	public boolean contains(double x, double y){
-		if(x > minX && x < maxX &&
-		   y > minY && y < maxY){
+		if(x >= minX && x <= maxX &&
+		   y >= minY && y <= maxY){
 			return true;
 		}
 		return false;
@@ -111,10 +111,8 @@ public class Box implements Serializable {
 	 * Line segment given by end points X and Y coordinates.
 	 */
 	public boolean overlap(double x1, double y1, double x2, double y2){
-		if(contains(x1, y1) || touch(x1, y1)){
-			if(contains(x2, y2) || touch(x2, y2)){
+		if(contains(x1, y1) && contains(x2, y2)){
 				return true;
-			}
 		}
 		return false;
 	}

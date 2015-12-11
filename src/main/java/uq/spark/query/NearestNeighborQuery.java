@@ -91,7 +91,7 @@ public class NearestNeighborQuery implements Serializable, SparkEnvInterface, In
 		 * in the neighborhood of Q
 		 *******************/
 		// retrieve candidate polygons IDs = VSIs
-		// check for polygons that overlaps with Q
+		// check for polygons that intersect with Q
 		HashSet<Integer> candidatePolygons = 
 				diagram.value().getClosestPolygons(q);
 

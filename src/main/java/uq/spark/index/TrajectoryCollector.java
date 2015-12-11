@@ -93,8 +93,6 @@ public class TrajectoryCollector implements Serializable{
 	 * Retrieve whole trajectories.
 	 * </br>
 	 * Post-process after collection.
-	 * </br>
-	 * May receive a logger to keep collection info.
 	 * 
 	 * @return Return a distributed dataset (RDD) of trajectories.
 	 * (Note: the given trajectories must be in the dataset)
@@ -109,22 +107,22 @@ public class TrajectoryCollector implements Serializable{
 		// filter pages that contains the specified trajectories
 		JavaPairRDD<PageIndex, Page> filteredPagesRDD = 
 				pagesRDD.filterPagesByIndex(indexSet);
-// TODO LOG
+
 		// collection log
-/*		if(log != null){
- 			log.appendln("Collect Trajectories by Id.");
-			log.appendln("Total Pages: " + pagesRDD.count());
-			log.appendln("Total Pages Filtered: " + filteredPagesRDD.count());
-			// get the number of trajectories that intersect with these pages
-			int totalTrajectories = 
-				filteredPagesRDD.values().flatMap(new FlatMapFunction<Page, String>() {
-					public Iterable<String> call(Page page) throws Exception {
-						return page.getTrajectoryIdSet();
-					}
-				}).distinct().collect().size();
-			log.appendln("Total Trajectories Filtered: " + totalTrajectories);
-		}
-*/		
+		/*System.out.println("Collect Trajectories by Id.");
+		System.out.println("Total Pages: " + pagesRDD.count());
+		System.out.println("Total Pages Filtered: " + filteredPagesRDD.count());
+		// get the number of trajectories that intersect with these pages
+		int totalTrajectories = 
+			filteredPagesRDD.values().flatMap(new FlatMapFunction<Page, String>() {
+				public Iterable<String> call(Page page) throws Exception {
+					return page.getTrajectoryIdSet();
+				}
+			}).distinct().collect().size();
+		System.out.println("Total Trajectories Filtered (TP+FP): " + totalTrajectories);
+		TOTAL_PAGES_FILTERED += filteredPagesRDD.count();
+		TOTAL_TRAJ_FILTERED += totalTrajectories;*/
+
 		// map each page to a list key value pairs containing 
 		// the desired trajectories
 		JavaRDD<Trajectory> trajectoryRDD =
@@ -150,13 +148,16 @@ public class TrajectoryCollector implements Serializable{
 		
 		//post processing
 		trajectoryRDD = postProcess(trajectoryRDD);
-// TODO LOG		
+	
 		// collection log
-/*		if(log != null){
-			log.appendln("Total Trajectories Collected: " + trajectoryRDD.count());
-			log.appendln();
-		}
-*/	
+		/*System.out.println("Total Trajectories Collected (TP): " + trajectoryRDD.count());
+		TOTAL_TRAJ_COLLECTED += trajectoryRDD.count();
+		System.out.println("TOTAIS: ");
+		System.out.println("TOTAL PAGES FILT.: " + TOTAL_PAGES_FILTERED);
+		System.out.println("TOTAL TRAJ FILT.:  " + TOTAL_TRAJ_FILTERED);
+		System.out.println("TOTAL TRAJ COL.:   " + TOTAL_TRAJ_COLLECTED);
+		System.out.println();*/
+
 		return trajectoryRDD;
 	}
 	
@@ -189,8 +190,6 @@ public class TrajectoryCollector implements Serializable{
 	 * </br>
 	 * Return whole trajectories (also filter from the PagesRDD other pages
 	 * that might contain trajectories in the given pages set.
-	 * </br>
-	 * May receive a logger to keep collection info.
 	 * 
 	 * @return Return a distributed dataset (RDD) of trajectories.
 	 * If there is no trajectories in the given page set, then return null. 
@@ -201,14 +200,12 @@ public class TrajectoryCollector implements Serializable{
 		JavaPairRDD<PageIndex, Page> filteredPagesRDD = 
 				pagesRDD.filterPagesByIndex(indexSet);
 
-// TODO LOG
 		// collection log
-/*		if(log != null){
-			log.appendln("Collect Trajectories by Page Index.");
-			log.appendln("Total Pages: " + pagesRDD.count());
-			log.appendln("Total Pages to Collect: " + filteredPagesRDD.count());
-		}
-*/	
+		/*System.out.println("Collect Trajectories by Page Index.");
+		System.out.println("Total Pages: " + pagesRDD.count());
+		System.out.println("Total Pages to Collect: " + filteredPagesRDD.count());
+		TOTAL_PAGES_TO_COLLECT += filteredPagesRDD.count();	*/
+		
 		// check if there is any page to for the given parameters
 		// Note: (it might be there is no page in the given time interval for the given polygon)
 		if(!filteredPagesRDD.isEmpty()){			
@@ -259,15 +256,19 @@ public class TrajectoryCollector implements Serializable{
 				}).values();
 			
 			// post processing
-			trajectoryRDD = postProcess(trajectoryRDD);		
-// TODO LOG
+			trajectoryRDD = postProcess(trajectoryRDD);
+			
 			// collection log
-/*			if(log != null){
-				log.appendln("Total Trajectories Filtered: " + idList.size());
-				log.appendln("Total Pages Filtered: " + filteredPagesRDD.count());
-				log.appendln("Total Trajectories Collected: " + trajectoryRDD.count());
-			}
-*/	
+			/*System.out.println("Total Pages Filtered: " + filteredPagesRDD.count());
+			System.out.println("Total Trajectories Filtered (TP+FP): " + idList.size());
+			System.out.println("Total Trajectories Collected (TP): " + trajectoryRDD.count());
+			TOTAL_TRAJ_FILTERED += idList.size();
+			TOTAL_PAGES_FILTERED += filteredPagesRDD.count();
+			System.out.println("TOTAIS: ");
+			System.out.println("TOTAL TRAJ FILT.: " + TOTAL_TRAJ_FILTERED);
+			System.out.println("TOTAL PAGES FILT.: " + TOTAL_PAGES_FILTERED);
+			System.out.println("TOTAL PAGES TO COL.: " + TOTAL_PAGES_TO_COLLECT);*/
+			
 			return trajectoryRDD;
 		}
 		return null;

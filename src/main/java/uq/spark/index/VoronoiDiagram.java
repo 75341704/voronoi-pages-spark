@@ -11,6 +11,7 @@ import uq.spatial.Circle;
 import uq.spatial.Point;
 import uq.spatial.Trajectory;
 import uq.spatial.voronoi.VoronoiDiagramGenerator;
+import uq.spatial.voronoi.VoronoiEdge;
 import uq.spatial.voronoi.VoronoiPolygon; 
  
 /**
@@ -57,19 +58,19 @@ public final class VoronoiDiagram implements Serializable, SparkEnvInterface {
 		// call of Fortune's algorithm
 		VoronoiDiagramGenerator gen = 
 				new VoronoiDiagramGenerator();
-		this.polygonsList = gen.generateVoronoiPolygons(pivotList);
+		this.polygonsList = gen.generateVoronoiPolygons(generatorPivots);
 	}
 
 	/**
 	 * Return the list of pivot points of this diagram.
 	 */
 	public List<Point> getPivots(){
-		if(pivotList == null){
+		/*if(pivotList == null){
 			pivotList = new ArrayList<Point>();
 			for(VoronoiPolygon poly : polygonsList){
 				pivotList.add(poly.pivot);
 			}
-		}
+		}*/
 		return pivotList;
 	}
 	
@@ -100,39 +101,83 @@ public final class VoronoiDiagram implements Serializable, SparkEnvInterface {
 	}
 	
 	/**
-	 * Retrieve all Voronoi polygons that overlap with 
-	 * the given region. Region specified by a Box perimeter.
+	 * Retrieve all Voronoi polygons that overlap with the
+	 * given box region.
 	 * </br>
 	 * Return a list of polygon IDs.
 	 */
-	public List<Integer> getOverlapingPolygons(Box region){
-		// retrieve candidate polygons IDs = VSIs
-		List<Integer> candidates = new ArrayList<Integer>();
-		// check if the query area (box) intersects the polygon.
-		for(VoronoiPolygon poly : polygonsList){
-			if(poly.overlap(region)){
-				candidates.add(poly.pivot.pivotId);
+	public List<Integer> getOverlapingPolygons(Box box){
+		// retrieve polygons ids
+		List<Integer> overlapList = new ArrayList<Integer>();
+		// check if the box area intersects the polygon.
+		for(VoronoiPolygon vp : polygonsList){
+			// check if the polygon's pivot is inside the box.
+			if(box.contains(vp.pivot)){ 
+				overlapList.add(vp.pivot.pivotId);
+				continue;
+			}
+			// check if any of the polygon vertices are
+			// inside the box, or if any edge intersect
+			for(VoronoiEdge edge : vp.getEdgeList()){
+				// check vertex in the box
+				if(box.contains(edge.x1, edge.y1) ||
+				   box.contains(edge.x2, edge.y2)){
+					overlapList.add(vp.pivot.pivotId);
+					break;
+				}
+				// check edge and box intersection 
+				if(box.intersect(edge.x1, edge.y1, edge.x2, edge.y2)){
+					overlapList.add(vp.pivot.pivotId);
+					break;
+				}
 			}
 		}
-		return candidates;
+		// check in which polygon the box center is inside
+		int closest = getClosestPolygon(box.center());
+		if(!overlapList.contains(closest)){
+			overlapList.add(closest);
+		}
+		return overlapList;
 	}
-
+	
 	/**
 	 * Retrieve all Voronoi polygons that overlap with 
-	 * the given region. Region specified by a Circle perimeter.
+	 * the given circle region.
 	 * </br>
 	 * Return a list of polygon IDs.
 	 */
-	public List<Integer> getOverlapingPolygons(Circle region){
-		// retrieve candidate polygons IDs = VSIs
-		List<Integer> candidates = new ArrayList<Integer>();
-		// check if the query area (box) intersects the polygon.
-		for(VoronoiPolygon poly : polygonsList){
-			if(poly.overlap(region)){
-				candidates.add(poly.pivot.pivotId);
+	public List<Integer> getOverlapingPolygons(Circle circle){
+		// retrieve candidate polygons ids
+		List<Integer> overlapList = new ArrayList<Integer>();
+		// check if the query area intersects the polygon.
+		for(VoronoiPolygon vp : polygonsList){
+			// check if the polygon's pivot is inside the circle.
+			if(circle.contains(vp.pivot)){ 
+				overlapList.add(vp.pivot.pivotId);
+				continue;
+			}
+			// check if any of the polygon vertices are
+			// inside the circle, or if any edge intersect
+			for(VoronoiEdge edge : vp.getEdgeList()){
+				// check contains
+				if(circle.contains(edge.x1, edge.y1) ||
+				   circle.contains(edge.x2, edge.y2)){
+					overlapList.add(vp.pivot.pivotId);
+					break;
+				}
+				// check edge and circle intersection 
+				if(circle.intersect(edge.x1, edge.y1, edge.x2, edge.y2)){
+					overlapList.add(vp.pivot.pivotId);
+					break;
+				}
 			}
 		}
-		return candidates;
+		// check in which polygon the circle center is inside
+		int closest = getClosestPolygon(circle.center());
+		if(!overlapList.contains(closest)){
+			overlapList.add(closest);
+		}
+		return overlapList;
 	}
 	
 	/**
@@ -143,10 +188,10 @@ public final class VoronoiDiagram implements Serializable, SparkEnvInterface {
 	 */
 	public HashSet<Integer> getClosestPolygons(Trajectory q) {
 		HashSet<Integer> polySet = new HashSet<Integer>();
-		double dist, minDist = INF;
-		int id = 0;
-		// check the closest pivot from each point
+		double dist, minDist;
+		int id=0;
 		for(Point p : q.getPointsList()){
+			minDist = INF;
 			for(Point piv : pivotList){
 				dist = p.dist(piv);
 				if(dist < minDist){
@@ -158,18 +203,25 @@ public final class VoronoiDiagram implements Serializable, SparkEnvInterface {
 		}
 		return polySet;
 	}
-/*	@Deprecated
-	public HashSet<Integer> getOverlapingPolygons(Trajectory q) {
-		HashSet<Integer> polySet = new HashSet<Integer>();
-		for(VoronoiPolygon vp : polygonsList){
-			for(Point p : q.getPointsList()){
-				if(vp.contains(p)){
-					polySet.add(vp.pivot.pivotId);
-					break;
-				}
+
+	/**
+	 * Retrieve the closest Voronoi polygon from this 
+	 * point (i.e. the polygon this point is inside of).
+	 * 
+	 * @return A polygon ID
+	 */
+	public Integer getClosestPolygon(Point p) {
+		double dist, minDist = INF;
+		int id = 0;		
+		// check the closest pivot from this point
+		for(Point piv : pivotList){
+			dist = p.dist(piv);
+			if(dist < minDist){
+				minDist = dist;
+				id = piv.pivotId;
 			}
 		}
-		return polySet;
+		return id;
 	}
 	
 	/**

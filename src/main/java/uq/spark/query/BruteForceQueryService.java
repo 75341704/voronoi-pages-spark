@@ -267,7 +267,7 @@ public class BruteForceQueryService implements Serializable, SparkEnvInterface{
 		}
 		
 		// Run KNN test
-		List<Trajectory> nnUseCases = readNearestNeighborUseCases();
+/*		List<Trajectory> nnUseCases = readNearestNeighborUseCases();
 		LOG.appendln("K-NN Result.");
 		for(int i=1; i<=13; i++){
 			// params
@@ -286,7 +286,7 @@ public class BruteForceQueryService implements Serializable, SparkEnvInterface{
 				LOG.appendln(n++ + "-NN: " + nn.id);
 				LOG.appendln("Dist: " + nn.distance);
 			}
-		}
+		}*/
 
 		// save the result log to HDFS
 		LOG.save("brute-force-experiments");

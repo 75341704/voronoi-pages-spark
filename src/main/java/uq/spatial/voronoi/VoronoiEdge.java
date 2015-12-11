@@ -30,8 +30,6 @@ package uq.spatial.voronoi;
 
 import java.io.Serializable;
 
-import uq.spatial.Point;
-
 /**
  * A Voronoi Edge is composed by its end points X and
  * Y coordinates, and the two polygons (pivots) it
@@ -69,45 +67,6 @@ public class VoronoiEdge implements Serializable {
 	     }
 	     return false;
 	}	
-	
-	/**
-	 * True if the given line segment intersects this edge.
-	 * Line segment is given by end point coordinates.
-	 * If the line segment only touches the edge or its vertexes 
-	 * than also return false.
-	 */
-	public boolean intersect(double x1, double y1, double x2, double y2){
-		// vectors r and s
-		double rx = x2 - x1;
-		double ry = y2 - y1;		
-		double sx = this.x2 - this.x1;
-		double sy = this.y2 - this.y1;
-		
-		// cross product r x s
-		double cross = (rx*sy) - (ry*sx);
-			
-		// they are parallel or colinear
-		if(cross == 0.0) return false;
-	
-		double t = (this.x1 - x1)*sy - (this.y1 - y1)*sx;
-			   t = t / cross;
-		double u = (this.x1 - x1)*ry - (this.y1 - y1)*rx;
-			   u = u / cross;
-
-	    if(t > 0.0 && t < 1.0 && 
-	       u > 0.0 && u < 1.0){
-	    	return true;
-	    }
-	    return false;
-	}
-	
-	/**
-	 * True if this edge touches the given point.
-	 */
-	public boolean touch(Point p){
-		double cross = (x2 - x1)*p.y - (y2 - y1)*p.x;
-		return (cross == 0 ? true : false);
-	}
 	
 	/**
 	 * True if this edge is parallel to the Y axis.

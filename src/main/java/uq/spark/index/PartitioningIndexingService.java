@@ -177,8 +177,36 @@ public class PartitioningIndexingService implements Serializable, SparkEnvInterf
 							}
 							point.pivotId = VSI;
 							
+							// check for boundary objects
+							if(prev == null){
+								sub.addPoint(point);
+							} else if(VSI == prevVSI && TPI == prevTPI){
+								sub.addPoint(point);
+							} 
+							// space/time boundary segment
+							else { 
+								// the current sub-trajectory also receives this boundary point
+								sub.addPoint(point);
+								 
+								// create the page for the previous sub-trajectory
+								PageIndex index = new PageIndex(prevVSI, prevTPI);
+								Page page = new Page();
+								page.add(sub);
+								
+								// add pair <(VSI,TPI), Sub-Trajectory>
+								resultPairs.add(new Tuple2<PageIndex, Trajectory>(index, sub));
+								
+								// new sub-trajectory for this boundary segment
+								sub = new Trajectory(id);
+								sub.addPoint(prev);
+								sub.addPoint(point);
+							}
+							prev = point;
+							prevVSI = VSI;
+							prevTPI = TPI;
+							
 							// the current sub-trajectory always receives this point
-							sub.addPoint(point);
+							/*sub.addPoint(point);
 							if(prev != null){ // not first point
 								// space/time boundary segment
 								if(VSI != prevVSI || TPI != prevTPI){
@@ -194,7 +222,7 @@ public class PartitioningIndexingService implements Serializable, SparkEnvInterf
 							}
 							prev = point;
 							prevVSI = VSI;
-							prevTPI = TPI; 
+							prevTPI = TPI; */
 						}
 						// add the page for the last sub-trajectory read
 						PageIndex index = new PageIndex(prevVSI, prevTPI);

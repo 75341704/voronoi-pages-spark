@@ -144,6 +144,7 @@ uq\spatial\clustering\Medoid.class
 uq\spark\index\TrajectoryCollector$2.class
 uq\fs\DataStatisticsService$14.class
 uq\fs\DataStatisticsService$7.class
+uq\spark\index\TrajectoryCollector$9.class
 uq\spark\query\BruteForceQueryService$2.class
 uq\spatial\delaunay\TriangleEdge.class
 uq\spark\query\QueryProcessingService.class

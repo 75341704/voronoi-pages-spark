@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
- 
+
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;
@@ -163,11 +163,11 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 		/******
 		 * K-NN QUERIES
 		 ******/
-/*		{
+		{
 			LOG.appendln("K-NN Query Result:\n");
 			long nnQueryTime=0;
 			int queryId=1;
-			int k = 40;
+			int k = 10;
 			for(Trajectory t : nnUseCases){
 				System.out.println("Query " + queryId);
 				long start = System.currentTimeMillis();				
@@ -178,12 +178,16 @@ public class ExperimentsService implements Serializable, SparkEnvInterface, Inde
 						.getKNearestNeighbors(t, tIni, tEnd, k);
 				long time = System.currentTimeMillis() - start;
 				LOG.appendln(k + "-NN Query " + queryId++ + ": " +  resultList.size() + " in " + time + " ms.");
+				int i=1;
+				for(NearNeighbor nn : resultList){
+					LOG.appendln(i++ + "-NN: " + nn.id);
+				}
 				nnQueryTime += time;
 			}
 			LOG.appendln(k + "-NN query ends at: " + System.currentTimeMillis() + "ms.");
 			LOG.appendln("Total " + k + "-NN Time: " + nnQueryTime + " ms.\n");
-		}		
-*/		
+		}
+		
 		// save the result log to HDFS
 		LOG.save(LOG_NAME);
 		
