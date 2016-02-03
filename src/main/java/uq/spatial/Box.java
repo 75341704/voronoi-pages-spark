@@ -16,18 +16,18 @@ import net.sf.jsi.Rectangle;
 public class Box implements Serializable {
 	// X and Y axis position
 	public double minX;
-	public double maxX;
 	public double minY;
+	public double maxX;
 	public double maxY;
 	
 	public Box(){}
-	public Box(double minX, double maxX, double minY, double maxY) {
+	public Box(double minX, double minY, double maxX, double maxY) {
 		this.minX = minX;
-		this.maxX = maxX;
 		this.minY = minY;
+		this.maxX = maxX;
 		this.maxY = maxY;
 	}
-	
+
 	/**
 	 * Return the rectangle of this box.
 	 */

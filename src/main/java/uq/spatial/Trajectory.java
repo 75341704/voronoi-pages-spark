@@ -11,6 +11,8 @@ import java.util.List;
 
 import org.apache.hadoop.io.Writable;
 
+import uq.spatial.distance.TrajectoryDistanceCalculator;
+
 /**
  * A trajectory entity.
  * 
@@ -18,7 +20,8 @@ import org.apache.hadoop.io.Writable;
  */
 @SuppressWarnings("serial")
 public class Trajectory implements Serializable, Cloneable, Writable, GeoInterface {
-	// the list of Points that composes the trajectory
+	
+	// the list of Points that composes this trajectory
 	private List<Point> pointsList = 
 			new ArrayList<Point>();
 	
@@ -35,7 +38,8 @@ public class Trajectory implements Serializable, Cloneable, Writable, GeoInterfa
 	/**
 	 * Comparator to sort trajectory points by time-stamp.
 	 */
-	private Comparator<Point> timeComparator = new TimeComparator<Point>(); 
+	private Comparator<Point> timeComparator = 
+			new TimeComparator<Point>(); 
 	
 	/**
 	 * Sort this trajectory's sample points by time-stamp
@@ -53,12 +57,37 @@ public class Trajectory implements Serializable, Cloneable, Writable, GeoInterfa
 	}
 	
 	/**
-	 *  Add a Point to this trajectory (end). 
+	 * The list of spatial-temporal segments in this trajectory.
+	 */
+	public List<STSegment> getSegmentsList() {
+		List<STSegment> segList = 
+				new ArrayList<STSegment>();
+		if(pointsList.size() < 2){
+			return segList;
+		}
+		for(int i=0; i<pointsList.size()-1; i++){
+			Point p1 = pointsList.get(i);
+			Point p2 = pointsList.get(i+1);
+			segList.add(new STSegment(p1, p2));
+		}
+		return segList;
+	}
+	
+	/**
+	 * Add a point to this trajectory (end). 
 	 */
 	public void addPoint(Point point){
 		pointsList.add(point);
 	}
 
+	/**
+	 * Add a segment to this trajectory (end). 
+	 */
+	public void addSegment(STSegment s){
+		pointsList.add(new Point(s.x1, s.y1, s.t1));
+		pointsList.add(new Point(s.x2, s.y2, s.t2));
+	}
+	
 	/**
 	 *  Add a Point List to this trajectory (end). 
 	 */
@@ -85,14 +114,52 @@ public class Trajectory implements Serializable, Cloneable, Writable, GeoInterfa
 		: "Trajectory index out of bound";
 		pointsList.remove(index);
 	}
-	
+
 	/**
-	 * Merges two trajectories.
-	 * Appends a trajectory t to the end of this trajectory.
+	 * Remove consecutive duplicated points from this 
+	 * trajectory (if there is any).
+	 * Note that duplicate points are checked under equals() 
+	 * Point function over consecutive points only.
+	 * 
+	 * @return Return this updated trajectory.
+	 */
+	public Trajectory removeDuplicates(){
+		// nothing to remove
+		if(size()<=1){
+			return this;
+		}
+		// new points list
+		List<Point> auxPointsList = 
+				new ArrayList<Point>();
+		// add first point
+		Point previous = pointsList.get(0);
+		auxPointsList.add(previous);
+		for(int i=1; i<size(); i++){
+			Point current = pointsList.get(i);
+			if(!current.equals(previous)){
+				auxPointsList.add(current);
+			}
+			previous = current;
+		}
+		// update
+		pointsList = auxPointsList;
+		return this;
+	}
+	/**
+	 * Merge two trajectories.
+	 * Appends the trajectory t to the end of this trajectory.
 	 */
 	public void merge(Trajectory t){
 		pointsList.addAll(t.getPointsList());
-		
+	}
+	
+	/**
+	 * The distance (similarity) between these two trajectory.
+	 * </br>
+	 * Must provide the distance measure to use. 
+	 */
+	public double dist(Trajectory t, TrajectoryDistanceCalculator distanceMeasure){
+		return distanceMeasure.getDistance(this, t);
 	}
 	
 	/**
@@ -126,7 +193,7 @@ public class Trajectory implements Serializable, Cloneable, Writable, GeoInterfa
 	 */
 	public long timeIni(){
 		if(!pointsList.isEmpty()){
-			return head().time;
+			return first().time;
 		}
 		return 0;
 	}
@@ -137,7 +204,7 @@ public class Trajectory implements Serializable, Cloneable, Writable, GeoInterfa
 	 */
 	public long timeEnd(){
 		if(!pointsList.isEmpty()){
-			return tail().time;
+			return last().time;
 		}
 		return 0;
 	}
@@ -170,8 +237,7 @@ public class Trajectory implements Serializable, Cloneable, Writable, GeoInterfa
 	}
 	
 	/**
-	 * Return the average speed of this trajectory
-	 * on a sphere surface (Earth).
+	 * Return the average speed of this trajectory.
 	 */
 	public double speed(){
 		if(!this.isEmpty() && this.duration()!=0){
@@ -181,7 +247,7 @@ public class Trajectory implements Serializable, Cloneable, Writable, GeoInterfa
 	}
 	
 	/**
-	 * Return the average sample rate of the points in 
+	 * Return the average sampling rate of the points in 
 	 * this trajectory (average time between every sample
 	 * point).
 	 */
@@ -199,9 +265,9 @@ public class Trajectory implements Serializable, Cloneable, Writable, GeoInterfa
 	}
 	
 	/**
-	 * The 'head' of this trajectory: First sample point.
+	 * The first sample point of this trajectory.
 	 */
-	public Point head(){
+	public Point first(){
 		if(!this.isEmpty()){
 			return pointsList.get(0);
 		}
@@ -209,15 +275,15 @@ public class Trajectory implements Serializable, Cloneable, Writable, GeoInterfa
 	}
 	
 	/**
-	 * The 'tail' of this trajectory: Last sample point.
+	 * The last sample point of this trajectory.
 	 */
-	public Point tail(){
+	public Point last(){
 		if(!this.isEmpty()){
 			return pointsList.get(pointsList.size()-1);
 		}
 		return null;
 	}
-	
+
 	/**
 	 * Return a sub-trajectory of this trajectory, from 
 	 * beginIndex inclusive to endIndex exclusive.
@@ -247,89 +313,57 @@ public class Trajectory implements Serializable, Cloneable, Writable, GeoInterfa
 				if(p.y > maxY) maxY = p.y;
 				if(p.y < minY) minY = p.y;
 			}
-			return new Box(minX,maxX,minY,maxY);	
+			return new Box(minX,minY,maxX,maxY);	
 		}
 		return new Box(0.0,0.0,0.0,0.0);
 	}
-	
-	/**
-	 * Split this trajectory into n sub-trajectories
-	 * and return the Minimum Boundary Rectangles (MBR) 
-	 * of each sub-trajectory.
-	 * 
-	 * @param n Number of splits.
-	 */
-/*	public List<Box> mbrList(final int n){ 
-		System.out.println("size: " + size() + " n: " + n);
-		// increment
-		double div = (size()-1) / n;
-		int inc = (int)Math.floor(div);
-		List<Box> boxList = new ArrayList<Box>();
 
-		double minX=MAX_X, maxX=MIN_X;
-		double minY=MAX_Y, maxY=MIN_Y;
-		for(int i=0; i<size(); i++){
-			Point p = pointsList.get(i);  
-			if(p.x > maxX) maxX = p.x;
-			if(p.x < minX) minX = p.x;
-			if(p.y > maxY) maxY = p.y;
-			if(p.y < minY) minY = p.y;
-			
-			
-			if(i>0 && i%inc == 0){
-				boxList.add(new Box(minX, minY, maxX, maxY));
-				minX=MAX_X; maxX=MIN_X; minY=MAX_Y; maxY=MIN_Y;
-				// --i;
-			}
-		}
-		return boxList;
-	}*/
-	
 	/**
-	 * True if these trajectories intersect each other.
-	 * (Euclidean space only)
-	 * If the trajectories only touch edges or vertexes 
-	 * than also returns false.
+	 * Check if these trajectories intersect each other
+	 * (Euclidean space only).
+	 * </br>
+	 * If the trajectories only touch edges or vertexes, 
+	 * then also returns false.
 	 */
 	public boolean intersect(Trajectory t){
-		if(isEmpty() || t.isEmpty()){
+		if(this.isEmpty() || t.isEmpty()){
 			return false;
 		}
-		double sx, sy, rx, ry;
-		double cross, v, u;
-		
 		for(int i=0; i < pointsList.size()-1; i++){
 			Point i1 = pointsList.get(i);
 			Point i2 = pointsList.get(i+1);
-			// trajectory edge vector 
-			sx = i2.x - i1.x;
-			sy = i2.y - i1.y;
-
+			Segment si = new Segment(i1.x, i1.y, i2.x, i2.y);
 			for(int j=0; j < t.size()-1; j++){
 				Point j1 = t.get(j);
 				Point j2 = t.get(j+1);
-				// trajectory edge vector
-				rx = j2.x - j1.x;
-				ry = j2.y - j1.y;
-
-				// cross product r x s
-				cross = (rx*sy) - (ry*sx);
-					
-				// they are parallel or colinear
-				if(cross != 0.0){
-					v = (i1.x - j1.x)*sy - (i1.y - j1.y)*sx;
-					   v = v / cross;
-					u = (i1.x - j1.x)*ry - (i1.y - j1.y)*rx;
-						   u = u / cross;
-
-				    if(v > 0.0 && v < 1.0 && 
-				       u > 0.0 && u < 1.0){
-				    	return true;
-				    }
+				Segment sj = new Segment(j1.x, j1.y, j2.x, j2.y);
+				if(si.intersect(sj)){
+					return true;
 				}
 			}
 		}
-		
+	    return false;
+	}
+	
+	/**
+	 * Check if this trajectory intersects with the given 
+	 * line segment (Euclidean space only).
+	 * </br>
+	 * If the segment only touches edges or vertexes 
+	 * of the trajectory, then also returns false.
+	 */
+	public boolean intersect(STSegment s){
+		if(this.isEmpty() || s==null){
+			return false;
+		}
+		for(int i=0; i < pointsList.size()-1; i++){
+			Point p1 = pointsList.get(i);
+			Point p2 = pointsList.get(i+1);
+			Segment si = new Segment(p1.x, p1.y, p2.x, p2.y);
+			if(si.intersect(s)){
+				return true;
+			}
+		}
 	    return false;
 	}
 	
@@ -373,12 +407,12 @@ public class Trajectory implements Serializable, Cloneable, Writable, GeoInterfa
 	
 	@Override
 	public String toString() {
-		StringBuilder toString = new StringBuilder();
-		toString.append(id);
+		StringBuilder script = new StringBuilder();
+		script.append(id);
 		for(Point p : pointsList){
-			toString.append(" " + p.toString());
+			script.append(" " + p.toString());
 		}
-		return toString.toString();
+		return script.toString();
 	}
 	
 	public void readFields(DataInput in) throws IOException {

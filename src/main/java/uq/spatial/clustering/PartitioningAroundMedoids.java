@@ -9,7 +9,7 @@ import java.util.List;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 
-import uq.spark.SparkEnvInterface;
+import uq.spark.EnvironmentVariables;
 import uq.spark.index.IndexParamInterface;
 import uq.spatial.Point;
 
@@ -28,7 +28,7 @@ import uq.spatial.Point;
  *
  */
 @SuppressWarnings("serial")
-public class PartitioningAroundMedoids implements Serializable, SparkEnvInterface, IndexParamInterface {
+public class PartitioningAroundMedoids implements Serializable, EnvironmentVariables, IndexParamInterface {
 	// fraction of the data to use in the heuristic
 	private static final double FRACTION = 0.3; // 1.0 = 100%
 	// the number of points to select in each partition (top 1)

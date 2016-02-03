@@ -6,7 +6,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 
 import uq.fs.HDFSFileService;
-import uq.spark.SparkEnvInterface;
+import uq.spark.EnvironmentVariables;
 import uq.spark.index.IndexParamInterface;
 import uq.spatial.Point;
 
@@ -26,7 +26,7 @@ import org.apache.spark.mllib.linalg.Vectors;
  *
  */
 @SuppressWarnings("serial")
-public class KMeansSpark implements Serializable, SparkEnvInterface, IndexParamInterface {
+public class KMeansSpark implements Serializable, EnvironmentVariables, IndexParamInterface {
 	// KMeans++ initial mode
 	private static final String INIT_MODE = KMeans.K_MEANS_PARALLEL();
 	// The fraction of the data to sample 

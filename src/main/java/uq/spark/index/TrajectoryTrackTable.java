@@ -3,6 +3,7 @@ package uq.spark.index;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 import org.apache.spark.api.java.JavaPairRDD;
@@ -16,7 +17,7 @@ import org.apache.spark.util.SizeEstimator;
 
 import scala.Tuple2;
 import uq.fs.HDFSFileService;
-import uq.spark.SparkEnvInterface;
+import uq.spark.EnvironmentVariables;
 import uq.spatial.Trajectory;
 
 /**
@@ -27,7 +28,7 @@ import uq.spatial.Trajectory;
  *
  */
 @SuppressWarnings("serial")
-public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
+public class TrajectoryTrackTable implements Serializable, EnvironmentVariables {
 	/**
 	 * The RDD of this table object hash table: 
 	 * (Trajectory ID, Set of {PageIndex})
@@ -47,7 +48,8 @@ public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
 			final JavaPairRDD<PageIndex, Trajectory> trajectoryToPageIndexRDD){	
 		// Map trajectories to overlapping pages.
 		// Map each pair (PageIndex, Sub-Trajectory) to (TrajectoryID, PageIndexSet)
-		mapTrajectoryToPageIndexSet(trajectoryToPageIndexRDD);
+		trajectoryTrackTableRDD = 
+			mapTrajectoryToPageIndexSet(trajectoryToPageIndexRDD);
 		trajectoryTrackTableRDD.setName("TrajectoryTrackTable");
 		trajectoryTrackTableRDD.persist(STORAGE_LEVEL_TTT);
 	}
@@ -286,18 +288,21 @@ public class TrajectoryTrackTable implements Serializable, SparkEnvInterface {
 	 */
 	public void print(){
 		System.out.println();
-		System.out.println("Trajectory Track Table: [(VSI,TPI)]");
-		System.out.println();
-		
+		System.out.println("Trajectory Track Table: [Grid IDs]");
 		trajectoryTrackTableRDD.foreach(new VoidFunction<Tuple2<String,PageIndexSet>>() {
-			public void call(Tuple2<String, PageIndexSet> tableTuple) throws Exception {
-				System.out.print(tableTuple._1 + ": [");
-				for(PageIndex index : tableTuple._2){
-					System.out.print("(" + index.toString() + ")");
+			public void call(Tuple2<String, PageIndexSet> tuple) throws Exception {
+				// print script
+				String script = tuple._1 + ": [";
+				for(PageIndex index : tuple._2){
+					script += "("+index.toString() + "),";
 				}
-				System.out.println("]\n\n");
+				script = script.substring(0,script.length()-1);
+				script += "]";
+				System.out.println(script);
+				
 			}
 		});
+		System.out.println();
 	}
 
 	/**

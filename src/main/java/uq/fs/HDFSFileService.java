@@ -7,7 +7,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -15,7 +14,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-import uq.spark.SparkEnvInterface;
+import uq.spark.EnvironmentVariables;
 import uq.spark.index.IndexParamInterface;
 import uq.spatial.Point;
 import uq.spatial.Trajectory;
@@ -28,7 +27,7 @@ import uq.spatial.Trajectory;
  *
  */
 @SuppressWarnings("serial")
-public class HDFSFileService implements SparkEnvInterface, Serializable, IndexParamInterface {
+public class HDFSFileService implements Serializable, EnvironmentVariables, IndexParamInterface {
 	
 	/**
 	 * Hadoop access configuration.
@@ -59,48 +58,6 @@ public class HDFSFileService implements SparkEnvInterface, Serializable, IndexPa
 	 */
 	public void setConf(Configuration config){
 		this.config = config;
-	}
-	
-	/**
-	 * Read pivots from HDFS file system.
-	 * Return a list of pivots (points).
-	 * 
-	 * @param num Number of pivots to read. Must be
-	 * smaller or equal the number of lines in the 
-	 * pivots file
-	 */
-	public List<Point> readPivotsHDFS(final int num){			
-		// fields to be read from the file
-		double x, y;
-		long time;
-		String line; 
-
-		List<Point> pivots = new ArrayList<Point>();
-
-		// read file lines
-        List<String> lines = 
-        		readFileHDFS(PIVOTS_PATH);
-			
-		// read K pivots (lines)
-        int pivotId = 1;
-		for(int i=0; i<num; i++){
-			line = lines.get(i);
-			if(line.length() > 2){
-				String[] tokens = line.split(" ");
-			
-				x = Double.parseDouble(tokens[0]);
-				y = Double.parseDouble(tokens[1]);
-				time = Long.parseLong(tokens[2]);
-				
-				// new pivot for this input
-				Point pivot = new Point(x,y,time);
-				pivot.pivotId = pivotId++;
-				
-				pivots.add(pivot);
-			}	
-		}
-		
-		return pivots;
 	}
 	
 	/**

@@ -6,7 +6,7 @@ import uq.spatial.GeoInterface;
 
 /**
  * Convert latitude and longitude coordinates
- * to cartesian coordinates.
+ * to cartesian coordinates (Mercator).
  * 
  * @author uqdalves
  *

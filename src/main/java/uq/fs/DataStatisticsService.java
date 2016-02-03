@@ -8,7 +8,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 
-import uq.spark.SparkEnvInterface;
+import uq.spark.EnvironmentVariables;
 import uq.spatial.Trajectory;
 
 /**
@@ -21,8 +21,10 @@ import uq.spatial.Trajectory;
  *
  */
 @SuppressWarnings("serial")
-public class DataStatisticsService implements Serializable, SparkEnvInterface{
-
+public class DataStatisticsService implements Serializable, EnvironmentVariables{
+	private static FileReader reader = 
+			new FileReader();
+	
 	/**
 	 * Number of trajectories in this dataset (RDD count).
 	 */
@@ -364,19 +366,14 @@ public class DataStatisticsService implements Serializable, SparkEnvInterface{
 		System.out.println("Running Dataset Statistics..\n");
 		
     	// read trajectory data files
-     	JavaRDD<String> fileRDD = SC.textFile(DATA_PATH, NUM_PARTITIONS_DATA);
-     	//fileRDD.persist(StorageLevel.MEMORY_AND_DISK());
-     	
-     	// convert the input dataset to trajectory objects (read the dataset in lat/lon)
-     	FileToObjectRDDService rddService = new FileToObjectRDDService();
-     	JavaRDD<Trajectory> trajectoryRDD = rddService.mapRawDataToTrajectoryRDD(fileRDD);
+     	JavaRDD<Trajectory> trajectoryRDD = 
+     			reader.readDataAsTrajectoryRDD();
    	
      	// calculate and save statistics to HDFS
      	saveStatistics(trajectoryRDD);
      	//saveDatasetStatisticsHist(trajectoryRDD);
      	
      	// clear cache
-     	fileRDD.unpersist();
      	trajectoryRDD.unpersist();
 	}
 }

@@ -16,8 +16,8 @@ public class STBox extends Box implements Serializable {
 	public long timeEnd=0;
 			
 	public STBox() {}
-	public STBox(double minX, double maxX, double minY, double maxY, long timeIni, long timeEnd) {
-		super(minX, maxX, minY, maxY);
+	public STBox(double minX, double minY, double maxX, double maxY, long timeIni, long timeEnd) {
+		super(minX, minY, maxX, maxY);
 		this.timeIni = timeIni;
 		this.timeEnd = timeEnd;
 	}

@@ -17,7 +17,7 @@ import org.apache.spark.util.SizeEstimator;
 import scala.Tuple2;
 
 import uq.fs.HDFSFileService;
-import uq.spark.SparkEnvInterface;
+import uq.spark.EnvironmentVariables;
 import uq.spatial.Point;
 import uq.spatial.Trajectory;
 
@@ -36,7 +36,7 @@ import uq.spatial.Trajectory;
  *
  */
 @SuppressWarnings("serial")
-public class VoronoiPagesRDD implements Serializable, SparkEnvInterface, IndexParamInterface {
+public class VoronoiPagesRDD implements Serializable, EnvironmentVariables, IndexParamInterface {
 	// the RDD for this Voronoi diagram. Voronoi pages.
 	private JavaPairRDD<PageIndex, Page> voronoiPagesRDD = null;
 	// number of partitions to coalesce after filtering pages

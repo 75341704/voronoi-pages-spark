@@ -10,7 +10,7 @@ import java.util.List;
 
 import org.apache.hadoop.io.Writable;
 
-import uq.spark.SparkEnvInterface;
+import uq.spark.EnvironmentVariables;
 import uq.spatial.Point;
 import uq.spatial.Trajectory;
 import uq.spatial.TrajectoryRTree; 
@@ -24,7 +24,7 @@ import uq.spatial.TrajectoryRTree;
  * @author uqdalves
  */
 @SuppressWarnings("serial")
-public class Page implements Serializable, Writable, SparkEnvInterface{
+public class Page implements Serializable, Writable, EnvironmentVariables{
 	/**
 	 * The tree containing the MBR of the 
 	 * trajectories/sub-trajectories in this page

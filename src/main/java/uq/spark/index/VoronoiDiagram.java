@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import uq.spark.SparkEnvInterface;
+import uq.spark.EnvironmentVariables;
 import uq.spatial.Box;
 import uq.spatial.Circle;
 import uq.spatial.Point;
@@ -27,7 +27,7 @@ import uq.spatial.voronoi.VoronoiPolygon;
  *
  */ 
 @SuppressWarnings("serial")
-public final class VoronoiDiagram implements Serializable, SparkEnvInterface {
+public final class VoronoiDiagram implements Serializable, EnvironmentVariables {
 	
 	// the list of polygons in this Voronoi diagram
 	private List<VoronoiPolygon> polygonsList = null;
@@ -65,12 +65,6 @@ public final class VoronoiDiagram implements Serializable, SparkEnvInterface {
 	 * Return the list of pivot points of this diagram.
 	 */
 	public List<Point> getPivots(){
-		/*if(pivotList == null){
-			pivotList = new ArrayList<Point>();
-			for(VoronoiPolygon poly : polygonsList){
-				pivotList.add(poly.pivot);
-			}
-		}*/
 		return pivotList;
 	}
 	
@@ -179,6 +173,31 @@ public final class VoronoiDiagram implements Serializable, SparkEnvInterface {
 		}
 		return overlapList;
 	}
+	
+	/**
+	 * Retrieve the Voronoi polygons that overlap with the
+	 * given point. Point given by X and Y coordinates.
+	 * </br>
+	 * Note that if the point is a border point then this 
+	 * function returns the polygons whose edges contain
+	 * the given point.
+	 * 
+	 * @return Return a list of polygon identifiers.
+	 */
+	/*public List<Integer> getOverlapingPolygons(double x, double y){
+		double minDist = INF;
+		double dist;
+		List<Integer> idList = new ArrayList<Integer>();
+		// check the closest pivot
+		for(Point pivot : pivotList){
+			dist = pivot.dist(x, y);
+			if(dist <= minDist){
+				minDist = dist;
+				id = pivot.pivotId;
+			}
+		}
+		return idList;
+	}*/
 	
 	/**
 	 * Retrieve the closest Voronoi polygons from this 

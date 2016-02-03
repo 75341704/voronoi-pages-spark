@@ -12,27 +12,29 @@ import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 
-import uq.exp.ExperimentsService;
 import uq.fs.DataStatisticsService;
-import uq.fs.FileToObjectRDDService;
+import uq.fs.DataConverter;
+import uq.fs.FileReader;
 import uq.fs.HDFSFileService;
 import uq.fs.PivotsService;
 import uq.fs.TachyonFileService;
+import uq.spark.exp.BenchmarkTest;
+import uq.spark.exp.PerformanceTest;
 import uq.spark.index.Page;
 import uq.spark.index.PageIndex;
 import uq.spark.index.PageIndexSet;
-import uq.spark.index.PartitioningIndexingService;
+import uq.spark.index.PagesPartitioningModule;
 import uq.spark.index.TrajectoryCollector;
 import uq.spark.index.TrajectoryTrackTable;
 import uq.spark.index.VoronoiDiagram;
 import uq.spark.index.VoronoiPagesRDD;
-import uq.spark.query.CrossQuery;
+import uq.spark.query.CrossQueryCalculator;
 import uq.spark.query.NearNeighbor;
-import uq.spark.query.NearestNeighborQuery;
+import uq.spark.query.NearestNeighborQueryCalculator;
 import uq.spark.query.NeighborComparator;
-import uq.spark.query.QueryProcessingService;
+import uq.spark.query.QueryProcessingModule;
 import uq.spark.query.SelectObject;
-import uq.spark.query.SelectionQuery;
+import uq.spark.query.SelectionQueryCalculator;
 import uq.spatial.Box;
 import uq.spatial.Circle;
 import uq.spatial.Point;
@@ -51,9 +53,11 @@ import uq.spatial.clustering.PartitioningAroundMedoids;
 import uq.spatial.delaunay.DelaunayTriangulation;
 import uq.spatial.delaunay.Triangle;
 import uq.spatial.delaunay.TriangleEdge;
-import uq.spatial.distance.DistanceService;
-import uq.spatial.distance.EuclideanDistanceCalculator;
+import uq.spatial.distance.EDwPDistanceCalculator;
+import uq.spatial.distance.EuclideanDistanceCalculator; 
 import uq.spatial.distance.HaversineDistanceCalculator;
+import uq.spatial.distance.PointDistanceCalculator; 
+import uq.spatial.distance.TrajectoryDistanceCalculator;
 import uq.spatial.transformation.ProjectionTransformation;
 import uq.spatial.voronoi.VoronoiDiagramGenerator;
 import uq.spatial.voronoi.VoronoiEdge;
@@ -75,21 +79,22 @@ public class KryoClassRegistrator implements KryoRegistrator{
 		kryo.register(Logger.class, new FieldSerializer(kryo, Logger.class));
 		
 		// partitioning
-		kryo.register(PartitioningIndexingService.class, new FieldSerializer(kryo, PartitioningIndexingService.class));
+		kryo.register(PagesPartitioningModule.class, new FieldSerializer(kryo, PagesPartitioningModule.class));
 		kryo.register(VoronoiPagesRDD.class, new FieldSerializer(kryo, VoronoiPagesRDD.class));
 		kryo.register(TrajectoryTrackTable.class, new FieldSerializer(kryo, TrajectoryTrackTable.class));
 		kryo.register(VoronoiDiagram.class, new FieldSerializer(kryo, VoronoiDiagram.class));
 		kryo.register(PageIndex.class, new FieldSerializer(kryo, PageIndex.class));
 		kryo.register(Page.class, new FieldSerializer(kryo, Page.class));
 		kryo.register(PageIndexSet.class, new FieldSerializer(kryo, PageIndexSet.class));
-		kryo.register(PivotsService.class, new FieldSerializer(kryo, PivotsService.class));
 		kryo.register(TrajectoryCollector.class, new FieldSerializer(kryo, TrajectoryCollector.class));
 		
 		// fs
 		kryo.register(HDFSFileService.class, new FieldSerializer(kryo, HDFSFileService.class));
-		kryo.register(FileToObjectRDDService.class, new FieldSerializer(kryo, FileToObjectRDDService.class));
+		kryo.register(DataConverter.class, new FieldSerializer(kryo, DataConverter.class));
+		kryo.register(FileReader.class, new FieldSerializer(kryo, FileReader.class));
 		kryo.register(DataStatisticsService.class, new FieldSerializer(kryo, DataStatisticsService.class));
 		kryo.register(TachyonFileService.class, new FieldSerializer(kryo, TachyonFileService.class));
+		kryo.register(PivotsService.class, new FieldSerializer(kryo, PivotsService.class));
 		
 		// spatial obj
 		kryo.register(Box.class, new FieldSerializer(kryo, Box.class));
@@ -102,10 +107,10 @@ public class KryoClassRegistrator implements KryoRegistrator{
 		kryo.register(STBox.class, new FieldSerializer(kryo, STBox.class));
 		
 		// query
-		kryo.register(QueryProcessingService.class, new FieldSerializer(kryo, QueryProcessingService.class));	
-		kryo.register(SelectionQuery.class, new FieldSerializer(kryo, SelectionQuery.class));
-		kryo.register(CrossQuery.class, new FieldSerializer(kryo, CrossQuery.class));
-		kryo.register(NearestNeighborQuery.class, new FieldSerializer(kryo, NearestNeighborQuery.class));
+		kryo.register(QueryProcessingModule.class, new FieldSerializer(kryo, QueryProcessingModule.class));	
+		kryo.register(SelectionQueryCalculator.class, new FieldSerializer(kryo, SelectionQueryCalculator.class));
+		kryo.register(CrossQueryCalculator.class, new FieldSerializer(kryo, CrossQueryCalculator.class));
+		kryo.register(NearestNeighborQueryCalculator.class, new FieldSerializer(kryo, NearestNeighborQueryCalculator.class));
 		kryo.register(NeighborComparator.class, new FieldSerializer(kryo, NeighborComparator.class));
 		kryo.register(NearNeighbor.class, new FieldSerializer(kryo, NearNeighbor.class));
 		kryo.register(SelectObject.class, new FieldSerializer(kryo, SelectObject.class));
@@ -131,7 +136,9 @@ public class KryoClassRegistrator implements KryoRegistrator{
 		kryo.register(PartitioningAroundMedoids.class, new FieldSerializer(kryo, PartitioningAroundMedoids.class));
 		
 		// distance
-		kryo.register(DistanceService.class, new FieldSerializer(kryo, DistanceService.class));
+		kryo.register(PointDistanceCalculator.class, new FieldSerializer(kryo, PointDistanceCalculator.class));
+		kryo.register(TrajectoryDistanceCalculator.class, new FieldSerializer(kryo, TrajectoryDistanceCalculator.class));
+		kryo.register(EDwPDistanceCalculator.class, new FieldSerializer(kryo, EDwPDistanceCalculator.class));
 		kryo.register(EuclideanDistanceCalculator.class, new FieldSerializer(kryo, EuclideanDistanceCalculator.class));
 		kryo.register(HaversineDistanceCalculator.class, new FieldSerializer(kryo, HaversineDistanceCalculator.class));
 		
@@ -144,7 +151,8 @@ public class KryoClassRegistrator implements KryoRegistrator{
 		kryo.register(TriangleEdge.class, new FieldSerializer(kryo, TriangleEdge.class));
 		
 		// experiments
-		kryo.register(ExperimentsService.class, new FieldSerializer(kryo, ExperimentsService.class));
+		kryo.register(BenchmarkTest.class, new FieldSerializer(kryo, BenchmarkTest.class));
+		kryo.register(PerformanceTest.class, new FieldSerializer(kryo, PerformanceTest.class));
 		
 		/*
 		kryo.register(Color.class, new Serializer() {

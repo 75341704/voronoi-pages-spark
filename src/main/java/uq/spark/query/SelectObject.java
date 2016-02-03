@@ -84,23 +84,23 @@ public class SelectObject implements Serializable {
 		for(int i=1; i<subTrajectoryList.size(); i++){
 			Trajectory sub_i = subTrajectoryList.get(i);
 			// bug do sort fix
-			if(sub_0.head().equals(sub_i.head())){
+			if(sub_0.first().equals(sub_i.first())){
 				sub_0 = sub_0.size() > sub_i.size() ? sub_0 : sub_i;
 			} else {
 				// check last segment of sub_0 with first of sub_i
 				if(sub_i.size() > 1){
 					// merge the segments
-					if(sub_0.tail().equals(sub_i.head())){
+					if(sub_0.last().equals(sub_i.last())){
 						sub_0.merge(sub_i.subTrajectory(1, sub_i.size()));
 					}
-					else if(sub_0.tail().equals(sub_i.get(1))){
+					else if(sub_0.last().equals(sub_i.get(1))){
 						sub_0.merge(sub_i.subTrajectory(2, sub_i.size()));
 					} else{
 						tList.add(sub_0);
 						sub_0 = subTrajectoryList.get(i);
 					}
 				} else if(sub_i.size() == 1){
-					if(!sub_0.tail().equals(sub_i.head())){
+					if(!sub_0.last().equals(sub_i.last())){
 						tList.add(sub_0);
 						sub_0 = subTrajectoryList.get(i);
 					}

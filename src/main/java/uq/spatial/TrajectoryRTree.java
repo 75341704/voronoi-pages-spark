@@ -63,7 +63,9 @@ public class TrajectoryRTree extends RTree implements Serializable, GeoInterface
 	 */
 	public List<Trajectory> getTrajectoriesByMBR(
 			final Box region){
-		final List<Trajectory> tList = new ArrayList<Trajectory>();
+		final List<Trajectory> tList = 
+				new ArrayList<Trajectory>();
+		
 		if(isEmpty()){
 			return tList;
 		}

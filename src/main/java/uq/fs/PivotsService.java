@@ -7,7 +7,7 @@ import java.util.List;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.mllib.linalg.Vector;
 
-import uq.spark.SparkEnvInterface;
+import uq.spark.EnvironmentVariables;
 import uq.spark.index.IndexParamInterface;
 import uq.spatial.Point;
 import uq.spatial.clustering.KMeansSpark;
@@ -23,8 +23,11 @@ import uq.spatial.clustering.PartitioningAroundMedoids;
  *
  */
 @SuppressWarnings("serial")
-public class PivotsService implements Serializable, SparkEnvInterface, IndexParamInterface {
-
+public class PivotsService implements Serializable, EnvironmentVariables, IndexParamInterface {
+ 	private static HDFSFileService hdfs = 
+ 			new HDFSFileService();
+	private static FileReader reader = new FileReader();
+	
 	/**
 	 * Randomly choose a given number of trajectory 
 	 * points from the dataset.
@@ -32,7 +35,7 @@ public class PivotsService implements Serializable, SparkEnvInterface, IndexPara
 	 * @param num The number of random points to choose.
 	 */
 	public static List<Point> selectRandomPoints(final JavaRDD<Point> pointsRDD, final int num){
-		System.out.println("\nSampling " + num + " Random Pivots..");
+		System.out.println("\n[PIVOTS SERVICE] Sampling " + num + " Random Pivots..");
 		return pointsRDD.takeSample(false, num);
 	}
 
@@ -43,7 +46,7 @@ public class PivotsService implements Serializable, SparkEnvInterface, IndexPara
 	 * @param num The number of points to select.
 	 */
 	public static List<Point> selectApproxMedoids(final JavaRDD<Point> pointsRDD, final int num){
-		System.out.println("\nSampling " + num + " Approx. Medoids..");
+		System.out.println("\n[PIVOTS SERVICE] Sampling " + num + " Approx. Medoids..");
 
 		// call of PAM heuristic
 		PartitioningAroundMedoids pam = 
@@ -51,7 +54,7 @@ public class PivotsService implements Serializable, SparkEnvInterface, IndexPara
 		List<Medoid> medoidsList = 
 				pam.selectKApproxMedoids(num, pointsRDD);
 		
-		System.out.println("Selected Medoids Cost: ");
+		System.out.println("[PIVOTS SERVICE] Selected Medoids Cost: ");
 		List<Point> pointsList = new ArrayList<Point>();
 		for(Medoid medoid : medoidsList){
 			System.out.println(medoid.cost);
@@ -67,7 +70,7 @@ public class PivotsService implements Serializable, SparkEnvInterface, IndexPara
 	 * @param k The number of clusters.
 	 */
 	public static List<Point> selectKMeans(final JavaRDD<Point> pointsRDD, final int k){
-		System.out.println("\nSelecting " + k + "-Means..");
+		System.out.println("\n[PIVOTS SERVICE] Selecting " + k + "-Means..");
 		System.out.println();
 		
 		// call of k-means algorithm
@@ -88,54 +91,46 @@ public class PivotsService implements Serializable, SparkEnvInterface, IndexPara
 	 */
 	public static void main(String [] args0){
 		System.out.println();
-		System.out.println("Running Pivot Service..\n");
+		System.out.println("[PIVOTS SERVICE] Running Service..\n");
 
     	// read trajectory data files
-     	JavaRDD<String> fileRDD = SC.textFile(DATA_PATH, NUM_PARTITIONS_DATA);
+		JavaRDD<Point> pointsRDD = reader.readDataAsPointRDD();
 
-     	// convert the input dataset to point objects
-     	FileToObjectRDDService rddService = new FileToObjectRDDService();
-     	JavaRDD<Point> pointsRDD = rddService.mapRawDataToPointRDD(fileRDD);
-
-     	// save result to HDFS
-     	HDFSFileService hdfsService = new HDFSFileService();
-	
      	// ramdom selection
     	List<Point> pointsList = 
      			selectRandomPoints(pointsRDD, 250);
-     	hdfsService.savePointListHDFS(pointsList, "pivots-random-250.txt");
+     	hdfs.savePointListHDFS(pointsList, "pivots-random-250.txt");
      	pointsList = 
      			selectRandomPoints(pointsRDD, 500);
-     	hdfsService.savePointListHDFS(pointsList, "pivots-random-500.txt");
+     	hdfs.savePointListHDFS(pointsList, "pivots-random-500.txt");
      	pointsList = 
      			selectRandomPoints(pointsRDD, 1000);
-     	hdfsService.savePointListHDFS(pointsList, "pivots-random-1000.txt");
+     	hdfs.savePointListHDFS(pointsList, "pivots-random-1000.txt");
      	pointsList = 
      			selectRandomPoints(pointsRDD, 2000);
-     	hdfsService.savePointListHDFS(pointsList, "pivots-random-2000.txt");
+     	hdfs.savePointListHDFS(pointsList, "pivots-random-2000.txt");
      	pointsList = 
      			selectRandomPoints(pointsRDD, 4000);
-     	hdfsService.savePointListHDFS(pointsList, "pivots-random-4000.txt");
+     	hdfs.savePointListHDFS(pointsList, "pivots-random-4000.txt");
 		
      	// k-means selection 
     	pointsList = 
      			selectKMeans(pointsRDD, 250);
-		hdfsService.savePointListHDFS(pointsList, "pivots-kmeans-250.txt");
+		hdfs.savePointListHDFS(pointsList, "pivots-kmeans-250.txt");
      	pointsList = 
      			selectKMeans(pointsRDD, 500);
-		hdfsService.savePointListHDFS(pointsList, "pivots-kmeans-500.txt");
+		hdfs.savePointListHDFS(pointsList, "pivots-kmeans-500.txt");
 		pointsList = 
 				selectKMeans(pointsRDD, 1000);
-		hdfsService.savePointListHDFS(pointsList, "pivots-kmeans-1000.txt");
+		hdfs.savePointListHDFS(pointsList, "pivots-kmeans-1000.txt");
 		pointsList = 
      			selectKMeans(pointsRDD, 2000);
-		hdfsService.savePointListHDFS(pointsList, "pivots-kmeans-2000.txt");
+		hdfs.savePointListHDFS(pointsList, "pivots-kmeans-2000.txt");
      	pointsList = 
      			selectKMeans(pointsRDD, 4000);
-		hdfsService.savePointListHDFS(pointsList, "pivots-kmeans-4000.txt");
+		hdfs.savePointListHDFS(pointsList, "pivots-kmeans-4000.txt");
 		
 		// clear cache
-		fileRDD.unpersist();
 		pointsRDD.unpersist();
 	}
 }

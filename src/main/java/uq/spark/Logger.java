@@ -25,14 +25,14 @@ public class Logger implements Serializable {
 	
 	/**
 	 * Add a string line to this log.
-	 * Add a break line after the string.
+	 * Add a line break after the string.
 	 */
 	public void appendln(String log){
 		this.log.append(log + "\n");
 	}
 	
 	/**
-	 * Add a break line int this log.
+	 * Add a line break to this log.
 	 */
 	public void appendln(){
 		this.log.append("\n");

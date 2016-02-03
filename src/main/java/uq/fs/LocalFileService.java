@@ -6,7 +6,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter; 
-import java.util.ArrayList; 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -14,7 +14,7 @@ import uq.spatial.Point;
 import uq.spatial.Trajectory;
 
 /**
- * Service to deal with files locally (open, read, save).
+ * Service to deal with files I/O locally.
  * 
  * @author uqdalves
  */
@@ -24,72 +24,65 @@ public class LocalFileService {
 	private static final String INPUT_FOLDER = "/input/";
 	private static final String OUTPUT_FOLDER = "/output/";
 
+	// FAZER UM REAd trajectory passando o numero d trajectories como parametro
+	// no file reader passar "hdfs:/.."    para ler do hdfs
+	//						 "file:/.."    para ler local
+	// 						 "tachyon:/.." para ler do tachyon
+	
 	/**
 	 * Return a list of Trajectory objects from local disc.
+	 * 
+	 * @param path Absolute path to folder/file.
 	 */
-	public ArrayList<Trajectory> readTrajectories(){
+	public ArrayList<Trajectory> readTrajectories(String path){
 		// trajectories to read
 		ArrayList<Trajectory> trajectoryList = 
 				new ArrayList<Trajectory>();
-		
+
+		// fields to be read from the file
+		double x, y;
+		long time;
+		String line, id;
 		try {	
 			// open files from folder
-			File diretory = new File(ROOT_PATH + INPUT_FOLDER);
+			File diretory = new File(path);
 			File files[] = openDirectoryFiles(diretory);
 			
-			// read files
+			// process files
 			for(int fileId=0; fileId<files.length; fileId++){
 				File currentFile = files[fileId];
 
 				// read file
 				BufferedReader buffer = new BufferedReader(
 	        			new FileReader(currentFile));
-				
-				// each line of the file
-	        	String line;
-	        	
-	        	// read the first line of the file
-	        	line = buffer.readLine();
-				
-				// fields to be read from the file
-				double x, y;
-				long time;
-				
-				// new trajectory for this file, set features
-				Trajectory trajectory = new Trajectory();
-				
+
 				// read file lines (coordinates)
 				while (buffer.ready()) {
 					line = buffer.readLine();
-					String[] tokens = line.split(",");
-					
-					// if new trajectory
-					if(tokens[0].equals("#")){
-						trajectoryList.add(trajectory);
-						// new trajectory for this file, set features
-						trajectory = new Trajectory();
-					} else {
-						// Parse the inputs
-						x = Double.parseDouble(tokens[0]);
-						y = Double.parseDouble(tokens[1]);
-						time = Long.parseLong(tokens[2]);
-						
-						// create a new point from the line input, set features
-						Point point = new Point(x, y, time);
-				    	
-				    	trajectory.addPoint(point);					
+
+					// split by either comma or any number of white spaces
+	                String[] tokens = line.split(",\\s*|\\s+");
+              
+					// at least the id and one point
+					if(tokens.length > 4){
+						// first token is the id
+						id = tokens[0];
+						Trajectory t = new Trajectory(id);
+						for(int i=1; i<=tokens.length-3; i+=3){
+							x    = Double.parseDouble(tokens[i]);
+							y    = Double.parseDouble(tokens[i+1]);
+							time = Long.parseLong(tokens[i+2]);
+							t.addPoint(new Point(x, y, time));
+						}
+						trajectoryList.add(t);
 					}
 				}
 				
-				// adds the last trajectory in the file
-		    	trajectoryList.add(trajectory);
-				
 				// close file
 				buffer.close();
-			} 
-			
+			}
 		} catch (IOException e) {
-			System.out.println("Error opening input files.");
+			System.out.println("[LOCAL FILE SERVICE] Error opening input files.");
 			e.printStackTrace();
 		}
 		
@@ -99,6 +92,7 @@ public class LocalFileService {
 	/**
 	 * Read a trajectory (Spark format) from local disc by its id.
 	 */
+	// TODO
 	public Trajectory readSparkTrajectoryById(String trajId){
 		File file = new File(ROOT_PATH + INPUT_FOLDER + "spark_trajectories"); 
 
@@ -149,6 +143,7 @@ public class LocalFileService {
 	 * All points from all trajectories in one list.
 	 * Read as if the trajectories were a dataset of points.
 	 */
+	// TODO
 	public ArrayList<Point> readSparkTrajectoriesAsPointList(){
 		ArrayList<Point> pointsList = new ArrayList<Point>();
 
@@ -202,6 +197,7 @@ public class LocalFileService {
 	 * Generates a set of artificial trajectories.
 	 * @param ref is the pivot, around which one wants to create the coordinates.
 	 */
+	// TODO
 	public ArrayList<Trajectory> generateSyntheticTrajectories(
 			int numTrajectories, int minSize, int maxSize, int ref){
 		ArrayList<Trajectory> trajList = new ArrayList<Trajectory>();
@@ -238,6 +234,7 @@ public class LocalFileService {
 	 * Save this list of trajectories to local disc files, 
 	 * save every trajPerFile trajectories into a different file.
 	 */
+	// TODO
 	public void saveTrajectoryList(
 			ArrayList<Trajectory> trajectoryList, int trajPerFile) {
 		
@@ -271,6 +268,7 @@ public class LocalFileService {
 	/**
 	 * Save this list of points to a local disc.
 	 */
+	// TODO
 	public void savePointsList(List<Point> pointsList, String fileName) {
 		System.out.println("\n Saving Points Locally.. \n");
 
@@ -284,11 +282,12 @@ public class LocalFileService {
 	
 	/**
 	 * Read the files inside a directory. Recursively read
-	 * directories into other directory.
+	 * directories/files inside other directory.
 	 * 
 	 * @param diretory
 	 * @return File[] a list with the files read
 	 */
+	// TODO
 	private File[] openDirectoryFiles(File diretory) {  
 	    List<File> fileList = new ArrayList<File>(); 
 	    
@@ -300,8 +299,7 @@ public class LocalFileService {
 	            for (int j = 0; j < recFiles.length; j++) { 
 	            	fileList.add(recFiles[j]);  
 	            }  
-	        } else {  
-	            // add in the list the file found in 'directory'  
+	        } else {
 	            fileList.add(files[i]);  
 	        }  
 	    }  
@@ -317,9 +315,11 @@ public class LocalFileService {
 	
 	/**
 	 * Save the file to the disc folder.
+	 * 
 	 * @param script The content of the file
 	 * @param fileName Name of the file, with its extension
 	 */
+	// TODO
 	private void saveFile(String script, String fileName){
 		File file = new File(ROOT_PATH + OUTPUT_FOLDER + fileName);
 

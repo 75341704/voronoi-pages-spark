@@ -3,28 +3,42 @@ package uq.spatial;
 import java.io.Serializable;
 
 import uq.spatial.distance.EuclideanDistanceCalculator;
-
+ 
 /**
- * A simple circle, defined by it center
+ * A simple circle, defined by its center
  * coordinates and radius.
  * 
  * @author uqdalves
  */
 @SuppressWarnings("serial")
 public class Circle implements Serializable, GeoInterface {
+	private EuclideanDistanceCalculator dist = 
+			new EuclideanDistanceCalculator();
 	/**
 	 * Circle center X coordinate
 	 */
-	public double xCenter;
+	public double center_x;
 	/**
 	 * Circle center Y coordinate
 	 */
-	public double yCenter;
+	public double center_y;
 	/**
 	 * The radius of this circle
 	 */
 	public double radius;
 		
+	public Circle(){}
+	public Circle(Point center, double radius) {
+		this.center_x = center.x;
+		this.center_y = center.y;
+		this.radius = radius;
+	}
+	public Circle(double center_x, double center_y, double radius) {
+		this.center_x = center_x;
+		this.center_y = center_y;
+		this.radius = radius;
+	}
+
 	/**
 	 * The perimeter of this circle
 	 */
@@ -43,15 +57,26 @@ public class Circle implements Serializable, GeoInterface {
 	 * Returns the center of this circle as a coordinate point.
 	 */
 	public Point center(){
-		return new Point(xCenter, yCenter);
+		return new Point(center_x, center_y);
 	}
 
+	/**
+	 * Get the Minimum Bounding Rectangle (MBR)
+	 * of this circle.
+	 */
+	public Box mbr(){
+		double min_x = center_x - radius;
+		double min_y = center_y - radius;
+		double max_x = center_x + radius;
+		double max_y = center_y + radius;
+		return new Box(min_x, min_y, max_x, max_y);
+	}
 	/**
 	 * True is this circle contains the given point inside its perimeter.
 	 * Check if the point lies inside the circle area.
 	 */
 	public boolean contains(Point p){
-		double dist = p.dist(xCenter, yCenter);
+		double dist = p.dist(center_x, center_y);
 		return (dist <= radius);
 	}
 	
@@ -69,7 +94,7 @@ public class Circle implements Serializable, GeoInterface {
 	 * True if the given point touches this circle (circle perimeter).
 	 */
 	public boolean touch(Point p){
-		double dist = p.dist(xCenter, yCenter);
+		double dist = p.dist(center_x, center_y);
 		return (dist == radius);
 	}
 	
@@ -90,19 +115,16 @@ public class Circle implements Serializable, GeoInterface {
 			double x1, double y1, 
 			double x2, double y2){
 		// triangle sides
-		double distP1 = EuclideanDistanceCalculator
-				.getDistance(xCenter, yCenter, x1, y1);
-		double distP2 =	EuclideanDistanceCalculator
-				.getDistance(xCenter, yCenter, x2, y2);
-		double base   = EuclideanDistanceCalculator
-				.getDistance(x1, y1, x2, y2); 
+		double distP1 = dist.getDistance(center_x, center_y, x1, y1);
+		double distP2 =	dist.getDistance(center_x, center_y, x2, y2);
+		double base   = dist.getDistance(x1, y1, x2, y2); 
 		// triangle area
 		double p = (distP1 + distP2 + base) / 2;
 		double area = Math.sqrt(p*(p-distP1)*(p-distP2)*(p-base));
 		// use triangulation to calculate distance from 
 		// the circle center to the segment
-		double hight = 2 * area * base;
-		if(hight >= radius){
+		double height = 2 * area * base;
+		if(height >= radius){
 			return false;
 		} 
 		// get distance between the center of the circle 

@@ -10,7 +10,9 @@ package uq.spatial;
 public interface GeoInterface {
 	// infinity value
 	static final double INF = Double.MAX_VALUE;
-	
+	// small number
+	static final double SMALL_NUM = 0.0001;
+		
 	// perimeter of the maximum area this application covers (map area)
 	static final double MIN_X = -1000000;
 	static final double MAX_X = 1000000;
