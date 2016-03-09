@@ -16,6 +16,6 @@ public class NeighborComparator<T> implements Serializable, Comparator<NearNeigh
 	 */
 	public int compare(NearNeighbor near0, NearNeighbor near1) {
 		return (near0.distance > near1.distance ? 1 : 
-			(near0.distance == near1.distance ? 0 : -1));
+			   (near0.distance == near1.distance ? 0 : -1));
 	}
 }

@@ -26,7 +26,6 @@ import uq.spatial.clustering.PartitioningAroundMedoids;
 public class PivotsService implements Serializable, EnvironmentVariables, IndexParamInterface {
  	private static HDFSFileService hdfs = 
  			new HDFSFileService();
-	private static FileReader reader = new FileReader();
 	
 	/**
 	 * Randomly choose a given number of trajectory 
@@ -94,7 +93,7 @@ public class PivotsService implements Serializable, EnvironmentVariables, IndexP
 		System.out.println("[PIVOTS SERVICE] Running Service..\n");
 
     	// read trajectory data files
-		JavaRDD<Point> pointsRDD = reader.readDataAsPointRDD();
+		JavaRDD<Point> pointsRDD = FileReader.readDataAsPointRDD();
 
      	// ramdom selection
     	List<Point> pointsList = 

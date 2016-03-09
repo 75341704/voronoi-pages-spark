@@ -14,8 +14,11 @@ public class MySparkContext {
 	private static final SparkConf conf = 
 			new SparkConf()
 			//.setMaster("local") 
-			.setAppName("SparkProject");//;
-			/*.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+			.setAppName("SparkProject");
+			//.set("spark.dynamicAllocation.enabled", "true"); // dynamic resource allocation
+			// spark.shuffle.service.enabled = true   // dynamic resource allocation - on each worker
+			/*.set("spark.scheduler.mode", "FAIR") // round-robin
+			.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
 	 		.set("spark.kryo.registrator", KryoClassRegistrator.class.getName())
 			.set("spark.kryoserializer.buffer.mb","128");*/// 24mb
 	private static final JavaSparkContext sc = new JavaSparkContext(conf);

@@ -11,7 +11,6 @@ import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 
 import scala.Tuple2;
-
 import uq.fs.FileReader;
 import uq.spark.EnvironmentVariables;
 import uq.spatial.Point;
@@ -67,7 +66,9 @@ public class PagesPartitioningModule implements Serializable, EnvironmentVariabl
 	 * Build the Voronoi diagram, assign trajectory points to
 	 *  Voronoi pages, and build the trajectory track table.
 	 */
-	public void run(){
+	public synchronized void run(){
+		System.out.println("\n[PARTITIONING MODULE] Running Data Partitioning..\n");
+		
      	/**
      	 * BUILD THE VORONOI DIAGRAM
      	 */
@@ -112,7 +113,7 @@ public class PagesPartitioningModule implements Serializable, EnvironmentVariabl
      * @return Return a RDD of pairs: 
      * (PageIndex = (VSI,TPI), Sub-Trajectory)
 	 */
-	public JavaPairRDD<PageIndex, Trajectory> mapTrajectoriesToPageIndex(
+	private JavaPairRDD<PageIndex, Trajectory> mapTrajectoriesToPageIndex(
 				final JavaRDD<Trajectory> trajectoryRDD, 
 				final Broadcast<VoronoiDiagram> voronoiDiagram){
 

@@ -41,10 +41,10 @@ public interface EnvironmentVariables extends IndexParamInterface {
 			HDFS_PATH + "/spark-data/trajectory-data/split2," +
 			HDFS_PATH + "/spark-data/trajectory-data/split3," +
 			HDFS_PATH + "/spark-data/trajectory-data/split4";
-			*//**/
-		/*	LOCAL_PATH + "/trajectory-data/split1," + 
+			*/
+			LOCAL_PATH + "/trajectory-data/split1," + 
 			LOCAL_PATH + "/trajectory-data/split2," +
-			LOCAL_PATH + "/trajectory-data/split3," +*/
+			LOCAL_PATH + "/trajectory-data/split3," +
 			LOCAL_PATH + "/trajectory-data/split4";
 	
 	// path to pivots file inside HDFS

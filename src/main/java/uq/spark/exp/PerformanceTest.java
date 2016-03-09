@@ -20,29 +20,28 @@ import uq.spatial.Trajectory;
 /**
  * Experiment to evaluate the performance of the algorithm.
  * Generate log result with query performance information.
+ * </br>
+ * Process many queries in FIFO mode (one at a time).
  * 
  * @author uqdalves
  *
  */
 @SuppressWarnings("serial")
 public class PerformanceTest  implements Serializable, EnvironmentVariables{
-	// service to read files
-	private static final FileReader reader = 
-			new FileReader();
 	// experiments log
 	private static final Logger LOG = new Logger();
 	// experiment log file name
 	private static final String LOG_NAME = 
-			"experiments-mem-" + K + "-" + TIME_WINDOW_SIZE + "s";
+			"voronoi-performance-mem-" + K + "-" + TIME_WINDOW_SIZE + "s";
 
 	/**
 	 * Main: Performance testing.
 	 */
 	public static void main(String[] args){
-		System.out.println("\nRunning Experiments..\n");
+		System.out.println("\n[EXPERIMENTS MODULE] Running Performance Test..\n");
 		
 		/************************
-		 * DATA INDEXING 
+		 * DATA PARTITIONING
 		 ************************/
 		PagesPartitioningModule partitioningService = 
 				new PagesPartitioningModule();
@@ -61,7 +60,7 @@ public class PerformanceTest  implements Serializable, EnvironmentVariables{
 				partitioningService.getTrajectoryTrackTable();
 
 		/************************
-		 * LOAD/WRITE THE INDEX 
+		 * LOAD/WRITE THE PAGES
 		 ************************/
 		// save the index structure
 /* 		voronoiPagesRDD.save(LOCAL_PATH + "/index-structure-7");
@@ -90,13 +89,13 @@ public class PerformanceTest  implements Serializable, EnvironmentVariables{
 		/******
 		 * SPATIAL TEMPORAL SELECTION QUERIES (WHOLE)
 		 ******/
-		List<STBox> stUseCases = 
-				reader.readSpatialTemporalTestCases();
+/*		List<STBox> stTestCases = 
+				FileReader.readSpatialTemporalTestCases();
 		{
 			LOG.appendln("Spatial-Temporal Selection Query Result (Whole):\n");
 			long selecQueryTime=0;
 			int queryId=1;
-			for(STBox stObj : stUseCases){
+			for(STBox stObj : stTestCases){
 				System.out.println("Query " + queryId);
 				long start = System.currentTimeMillis();
 				// run query - whole trajectories
@@ -109,14 +108,15 @@ public class PerformanceTest  implements Serializable, EnvironmentVariables{
 			LOG.appendln("Spatial-Temporal Selection ends at: " + System.currentTimeMillis() + "ms.");
 			LOG.appendln("Total Spatial-Temporal Selection Query Time: " + selecQueryTime + " ms.\n");
 		}
+		
 		/******
 		 * SPATIAL TEMPORAL SELECTION QUERIES (EXACT)
 		 ******/
-		{
+/*		{
 			LOG.appendln("Spatial-Temporal Selection Query Result (Exact):\n");
 			long selecQueryTime=0;
 			int queryId=1;
-			for(STBox stObj : stUseCases){
+			for(STBox stObj : stTestCases){
 				System.out.println("Query " + queryId);
 				long start = System.currentTimeMillis();
 				// run query - exact sub-trajectories
@@ -133,19 +133,20 @@ public class PerformanceTest  implements Serializable, EnvironmentVariables{
 		 * NN QUERIES
 		 ******/
 		List<Trajectory> nnUseCases = 
-				reader.readNearestNeighborTestCases();
+				FileReader.readNearestNeighborTestCases();
 		{
 			LOG.appendln("NN Query Result:\n");
 			long nnQueryTime=0;
 			int queryId=1;
-			for(Trajectory t : nnUseCases){
+			for(Trajectory q : nnUseCases){
 				System.out.println("Query " + queryId);
+				// params
 				long start = System.currentTimeMillis();				
 				// run query
-				long tIni = t.timeIni();
-				long tEnd = t.timeEnd();
+				long tIni = q.timeIni();
+				long tEnd = q.timeEnd();
 				Trajectory result = queryService
-						.getNearestNeighbor(t, tIni, tEnd);
+						.getNearestNeighbor(q, tIni, tEnd);
 				long time = System.currentTimeMillis() - start;
 				LOG.appendln("NN Query " + queryId++ + ": " +  result.id + " in " + time + " ms.");
 				nnQueryTime += time;
@@ -156,7 +157,7 @@ public class PerformanceTest  implements Serializable, EnvironmentVariables{
 		/******
 		 * K-NN QUERIES
 		 ******/
-		{
+/*		{
 			LOG.appendln("K-NN Query Result:\n");
 			long nnQueryTime=0;
 			int queryId=1;
@@ -171,22 +172,16 @@ public class PerformanceTest  implements Serializable, EnvironmentVariables{
 						.getKNearestNeighbors(t, tIni, tEnd, k);
 				long time = System.currentTimeMillis() - start;
 				LOG.appendln(k + "-NN Query " + queryId++ + ": " +  resultList.size() + " in " + time + " ms.");
-				// print result
-				/*
-				int i=1;
-				for(NearNeighbor nn : resultList){
-					LOG.appendln(i++ + "-NN: " + nn.id);
-				}*/
 				nnQueryTime += time;
 			}
 			LOG.appendln(k + "-NN query ends at: " + System.currentTimeMillis() + "ms.");
 			LOG.appendln("Total " + k + "-NN Time: " + nnQueryTime + " ms.\n");
 		}
-		
+*/		
 		// save the result log to HDFS
 		LOG.save(LOG_NAME);
 		
-		// unpersist
+		// unpersist RDDs
 		voronoiPagesRDD.unpersist();
 		trajectoryTrackTable.unpersist();
 	}

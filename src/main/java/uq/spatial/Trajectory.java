@@ -116,35 +116,26 @@ public class Trajectory implements Serializable, Cloneable, Writable, GeoInterfa
 	}
 
 	/**
-	 * Remove consecutive duplicated points from this 
-	 * trajectory (if there is any).
+	 * Remove any consecutive duplicated points from this 
+	 * trajectory.
+	 * </br>
 	 * Note that duplicate points are checked under equals() 
-	 * Point function over consecutive points only.
-	 * 
-	 * @return Return this updated trajectory.
+	 * over consecutive points only.
 	 */
-	public Trajectory removeDuplicates(){
-		// nothing to remove
-		if(size()<=1){
-			return this;
-		}
-		// new points list
-		List<Point> auxPointsList = 
-				new ArrayList<Point>();
-		// add first point
-		Point previous = pointsList.get(0);
-		auxPointsList.add(previous);
-		for(int i=1; i<size(); i++){
-			Point current = pointsList.get(i);
-			if(!current.equals(previous)){
-				auxPointsList.add(current);
+	public void removeDuplicates(){
+		int size = pointsList.size();
+		Point p1, p2;
+		for(int i = 0; i < size-1; i++){
+			p1 = pointsList.get(i);
+			p2 = pointsList.get(i+1);
+			if(p1.equals(p2)){
+				pointsList.remove(i);
+				size--;
+				--i;
 			}
-			previous = current;
 		}
-		// update
-		pointsList = auxPointsList;
-		return this;
 	}
+	
 	/**
 	 * Merge two trajectories.
 	 * Appends the trajectory t to the end of this trajectory.

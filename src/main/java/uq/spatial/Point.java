@@ -23,7 +23,7 @@ public class Point implements Serializable, Cloneable, Writable {
 	public double y;
 	public long time;
 	
-	// the closest pivot to this point
+	// The closest pivot to this point
 	public int pivotId;
 
 	public Point(){}

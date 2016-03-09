@@ -3,7 +3,6 @@ package uq.spark.index;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 
 import org.apache.spark.api.java.JavaPairRDD;
@@ -68,7 +67,7 @@ public class TrajectoryTrackTable implements Serializable, EnvironmentVariables 
 				new PairFunction<String, String, PageIndexSet>() {
 			public Tuple2<String, PageIndexSet> call(String tuple) throws Exception {
 				// read a table tuple as string
-				String[] tokens = tuple.split(("\\(|,|\\)"));
+				String[] tokens = tuple.split("\\(|,|\\)");
 				// trajectory id
 				String id = tokens[1];
 				// read page index set
@@ -80,6 +79,15 @@ public class TrajectoryTrackTable implements Serializable, EnvironmentVariables 
 				}
 				return new Tuple2<String, PageIndexSet>(id, set);
 			}
+			// example using scanner
+			/*//split by either comma or any number of whitespaces
+			String[] fields = line.split(",\\s*|\\s+");
+			Scanner s = new Scanner(line).useDelimiter(",\\s*|\\s+");
+			System.out.println(s.nextInt());
+			System.out.println(s.nextInt());
+			System.out.println(s.next());
+			System.out.println(s.next());
+			*/
 		});
 	}
 

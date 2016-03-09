@@ -2,7 +2,6 @@ package uq.spark.query;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.spark.api.java.JavaRDD;
@@ -11,7 +10,6 @@ import org.apache.spark.api.java.function.Function;
 
 import uq.fs.DataConverter;
 import uq.fs.FileReader;
-import uq.fs.LocalFileService;
 import uq.spark.Logger;
 import uq.spark.EnvironmentVariables;
 import uq.spatial.Box;
@@ -257,36 +255,36 @@ public class GreedyQueryCalculator implements Serializable, EnvironmentVariables
 		LOG.appendln();
 		
 		// Run spatial-temporal selection test
-/*		List<STBox> stUseCases = 
+		List<STBox> stTestCases = 
 				FileReader.readSpatialTemporalTestCases();
 		LOG.appendln("Spatial-Temporal Selection Result.");
 		LOG.appendln();
-		for(int i=1; i<=10; i++){ // run only 10 queries
-			STBox stObj = stUseCases.get(i);
+		int i=1;
+		for (STBox stObj : stTestCases){
 			List<Point> ptList = 
 					getSpatialTemporalSelectionPt(trajRDD, stObj, stObj.timeIni, stObj.timeEnd);
 			List<Trajectory> tList = 
 					getSpatialTemporalSelectionTr(trajRDD, stObj, stObj.timeIni, stObj.timeEnd);
-			LOG.appendln("Query " + i + " Result.");
+			LOG.appendln("Query " + i++ + " Result.");
 			LOG.appendln("Number of Points: "  + ptList.size());
 			LOG.appendln("Trajectories Returned: " + tList.size());
 		}
-*/
+
 		// Run KNN test
-		List<Trajectory> nnUseCases = 
+		List<Trajectory> nnTestCases = 
 				FileReader.readNearestNeighborTestCases();
 		LOG.appendln("K-NN Result.");
 		LOG.appendln();
-		for(int i=1; i<=10; i++){ // run only 10 queries
+		int j=1;
+		for(Trajectory q : nnTestCases){ // run only 10 queries
 			// params
-			Trajectory q = nnUseCases.get(i);
-			long tIni = q.timeIni();
-			long tEnd = q.timeEnd();
-			final int k = 10; // 10-NN
+			long tIni 	= q.timeIni();
+			long tEnd 	= q.timeEnd();
+			final int k = 20; // 20-NN
 			// run query
 			List<NearNeighbor> result = 
 					getKNNQuery(trajRDD, q, tIni, tEnd, k);
-			LOG.appendln("Query " + i + " Result.");
+			LOG.appendln("Query " + j++ + " Result.");
 			LOG.appendln("Query Trajectory: " + q.id);
 			LOG.appendln("Trajectories Returned: " + result.size());
 			int n=1;

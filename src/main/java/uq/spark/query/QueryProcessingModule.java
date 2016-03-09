@@ -18,6 +18,8 @@ import uq.spatial.clustering.Cluster;
 /**
  * Service to process trajectory queries
  * on a previously built Voronoi index.
+ * </br>
+ * Can be called by many concurrent threads.
  * 
  * @author uqdalves
  */
@@ -55,11 +57,12 @@ public class QueryProcessingModule implements Serializable {
 	 * 
 	 * @param whole True if wants to return the whole trajectories.
 	 */
-	public List<Trajectory> getSpatialTemporalSelection (
+	public synchronized List<Trajectory> getSpatialTemporalSelection (
 			final Box region, 
 			final long t0, final long t1, 
 			final boolean whole){
-		System.out.println("\nRunning Spatial Temporal Selection Query..\n");
+		System.out.println("[QUERY MODULE] Running Spatial-Temporal Selection Query..\n");
+		
 		// query result
 		List<Trajectory> trajectoryList = new ArrayList<Trajectory>();
 		if(whole){
@@ -82,10 +85,11 @@ public class QueryProcessingModule implements Serializable {
 	 * 
 	 * @param whole True if wants to return the whole trajectories.
 	 */
-	public List<Trajectory> getSpatialSelection(
+	public synchronized List<Trajectory> getSpatialSelection(
 			final Box region,
 			final boolean whole){
-		System.out.println("\nRunning Spatial Selection Query..\n");
+		System.out.println("\n[QUERY MODULE] Running Spatial Selection Query..\n");
+		
 		// query result
 		List<Trajectory> trajectoryList = new ArrayList<Trajectory>();
 		if(whole){
@@ -109,10 +113,11 @@ public class QueryProcessingModule implements Serializable {
 	 * 
 	 * @param whole True if wants to return the whole trajectories.
 	 */
-	public List<Trajectory> getTimeSlice(
+	public synchronized List<Trajectory> getTemporalSelection(
 			final long t0, final long t1, 
 			final boolean whole){
-		System.out.println("\nRunning Time Slice Query..\n");
+		System.out.println("\n[QUERY MODULE] Running Time Selection Query..\n");
+		
 		// query result
 		List<Trajectory> trajectoryList = new ArrayList<Trajectory>();
 		if(whole){		
@@ -133,10 +138,11 @@ public class QueryProcessingModule implements Serializable {
 	 * Given a query trajectory Q, not necessarily in the data set, 
 	 * return all trajectories in the data set that crosses with Q.
 	 */
-	public List<Trajectory> getCrossSelection(
+	public synchronized List<Trajectory> getCrossSelection(
 			final Trajectory q){
 		
-		System.out.println("\nRunning Cross Selection Query..\n");
+		System.out.println("\n[QUERY MODULE] Running Crossing Selection Query..\n");
+		
 		// query result
 		List<Trajectory> trajectoryList = new ArrayList<Trajectory>();
 		// collect whole trajectories
@@ -154,10 +160,11 @@ public class QueryProcessingModule implements Serializable {
 	 * 
 	 * @param whole True if wants to return the whole trajectories.
 	 */
-	public Trajectory getNearestNeighbor(
+	public synchronized Trajectory getNearestNeighbor(
 			final Trajectory q, 
 			final long t0, final long t1){
-		System.out.println("\nRunning NN Query..\n");
+		System.out.println("\n[QUERY MODULE] Running NN Query..\n");
+		
 		// query result
 		NearNeighbor nnResult = 
 				nnQuery.getNearestNeighbor(q, t0, t1);
@@ -169,11 +176,12 @@ public class QueryProcessingModule implements Serializable {
 	 * and a integer K, return the K Nearest Neighbors (Most  
 	 * Similar Trajectories) from Q, within the interval [t0,t1]. 
 	 */
-	public List<NearNeighbor> getKNearestNeighbors(
+	public synchronized List<NearNeighbor> getKNearestNeighbors(
 			final Trajectory q, 
 			final long t0, final long t1, 
 			final int k){
-		System.out.println("\nRunning " + k + "-NN Query..\n");
+		System.out.println("\n[QUERY MODULE] Running " + k + "-NN Query..\n");
+		
 		// query result
 		List<NearNeighbor> resultList = 
 				nnQuery.getKNearestNeighbors(q, t0, t1, k);
@@ -185,10 +193,10 @@ public class QueryProcessingModule implements Serializable {
 	 * return all trajectories that have Q as their Nearest Neighbor
 	 * (Most Similar Trajectory), within the interval [t0,t1].
 	 */
-	public List<Trajectory> getReverseNearestNeighbors(
+	public synchronized List<Trajectory> getReverseNearestNeighbors(
 			final Trajectory q, 
 			final long t0, final long t1){
-		System.out.println("\nRunning Reverse NN Query..\n");
+		System.out.println("\n[QUERY MODULE] Running Reverse NN Query..\n");
 		// query result
 		Iterator<Trajectory> resultItr = 
 				nnQuery.getReverseNearestNeighbors(q, t0, t1);
@@ -216,11 +224,12 @@ public class QueryProcessingModule implements Serializable {
 	 * 
 	 * @return A list of clusters of trajectory points.
 	 */
-	public List<Cluster> getSpatialDensityClusters(
+	public synchronized List<Cluster> getSpatialDensityClusters(
 			final Box region, 
 			final double distanceThresold, 
 			final int minPoints){
-		System.out.println("\nRunning Spatial Density Query..\n");
+		System.out.println("\n[QUERY MODULE] Running Spatial Density Query..\n");
+		
 		// query result
 		List<Cluster> resultList = 
 				densityQuery.runDensityQuery(region, distanceThresold, minPoints);
@@ -244,12 +253,13 @@ public class QueryProcessingModule implements Serializable {
 	 * 
 	 * @return A list of clusters of trajectory points.
 	 */
-	public List<Cluster> getSpatialTemporalDensityClusters(
+	public synchronized List<Cluster> getSpatialTemporalDensityClusters(
 			final Box region, 
 			final long t0, final long t1,
 			final double distanceThresold, 
 			final int minPoints){
-		System.out.println("\nRunning Spatial Temporal Density Query..\n");
+		System.out.println("\n[QUERY MODULE] Running Spatial-Temporal Density Query..\n");
+		
 		// query result
 		List<Cluster> resultList = 
 				densityQuery.runDensityQuery(region, t0, t1, distanceThresold, minPoints);

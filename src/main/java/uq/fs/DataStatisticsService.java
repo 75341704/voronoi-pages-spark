@@ -22,9 +22,6 @@ import uq.spatial.Trajectory;
  */
 @SuppressWarnings("serial")
 public class DataStatisticsService implements Serializable, EnvironmentVariables{
-	private static FileReader reader = 
-			new FileReader();
-	
 	/**
 	 * Number of trajectories in this dataset (RDD count).
 	 */
@@ -367,7 +364,7 @@ public class DataStatisticsService implements Serializable, EnvironmentVariables
 		
     	// read trajectory data files
      	JavaRDD<Trajectory> trajectoryRDD = 
-     			reader.readDataAsTrajectoryRDD();
+     			FileReader.readDataAsTrajectoryRDD();
    	
      	// calculate and save statistics to HDFS
      	saveStatistics(trajectoryRDD);

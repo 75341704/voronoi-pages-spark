@@ -52,7 +52,7 @@ public class LocalTestService  extends TestCase {
 			new PartitioningAroundMedoids();
 	
 	public static void main(String[] args) { 
-		LocalFileService serv = new LocalFileService();
+		/*LocalFileService serv = new LocalFileService();
 		List<Trajectory> testCases = 
 			serv.readTrajectories("C:/lol/");
 		
@@ -63,7 +63,17 @@ public class LocalTestService  extends TestCase {
 				new EDwPDistanceCalculator();
 		for(Trajectory t : testCases){
 			System.out.println("Dist: " + t.dist(query, edwp));
-		}
+		}*/
+		
+		List<Point> list = null;
+		if(!list.isEmpty()&& list!=null ){
+			System.out.println("empty");
+		} 
+		list = new ArrayList<Point>();
+		if(list.isEmpty()){
+			System.out.println("empty");
+		} 
+		
 	}
 	
 	/**

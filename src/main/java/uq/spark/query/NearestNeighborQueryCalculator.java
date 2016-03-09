@@ -70,7 +70,13 @@ public class NearestNeighborQueryCalculator implements Serializable, Environment
 	public NearNeighbor getNearestNeighbor(
 			final Trajectory q, 
 			final long t0, final long t1){
-		return getKNearestNeighbors(q, t0, t1, 1).get(0);
+		List<NearNeighbor> result = 
+				getKNearestNeighbors(q, t0, t1, 1);
+		NearNeighbor nn = new NearNeighbor();
+		if(result!=null && !result.isEmpty()){
+			nn = result.get(0);
+		}
+		return nn;
 	}
 	
 	/**
@@ -291,5 +297,4 @@ public class NearestNeighborQueryCalculator implements Serializable, Environment
 
 		return currentList;	
 	}
-
 }

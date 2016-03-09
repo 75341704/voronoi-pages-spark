@@ -339,20 +339,14 @@ public class TrajectoryCollector implements Serializable{
 	 * Post processing operation.
 	 * </br>
 	 * Sorts the trajectory points by time stamp
-	 * and removes any duplicates form the map phase.
+	 * and removes any duplicates (border points) 
+	 * from the map phase.
 	 * 
 	 * @return A post-processed trajectory
 	 */
 	private Trajectory postProcess(Trajectory t) {
 		t.sort();
-		int size = t.size();
-		for(int i = 0; i < size-1; i++){
-			if(t.get(i).equals(t.get(i+1))){
-				t.removePoint(i);
-				size--;
-				--i;
-			}
-		}
+		t.removeDuplicates();
 		return t;
 	}
 
@@ -366,7 +360,7 @@ public class TrajectoryCollector implements Serializable{
 	 */
 	private JavaRDD<Trajectory> postProcess(
 			JavaRDD<Trajectory> trajectoryRDD){
-		// map each trajec to its post-process version
+		// map each trajectory to its post-process version
 		trajectoryRDD = 
 			trajectoryRDD.map(new Function<Trajectory, Trajectory>() {
 				public Trajectory call(Trajectory t) throws Exception {

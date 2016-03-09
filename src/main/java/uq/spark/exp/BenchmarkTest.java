@@ -26,9 +26,6 @@ import uq.spatial.Trajectory;
  */
 @SuppressWarnings("serial")
 public class BenchmarkTest implements Serializable, EnvironmentVariables{
-	// service to read files
-	private static final FileReader reader = 
-			new FileReader();
 	// experiments log
 	private static final Logger LOG = new Logger();
 
@@ -36,7 +33,10 @@ public class BenchmarkTest implements Serializable, EnvironmentVariables{
 	 * Main: Performance testing.
 	 */
 	public static void main(String[] args){
-		System.out.println("\nRunning Experiments..\n");
+		System.out.println("\n[EXPERIMENTS MODULE] Running Benchmark Experiments..");
+	
+		LOG.appendln("Voronoi-Pages Test Result.");
+		LOG.appendln();
 		
 		/************************
 		 * DATA INDEXING 
@@ -64,8 +64,8 @@ public class BenchmarkTest implements Serializable, EnvironmentVariables{
 				voronoiPagesRDD, trajectoryTrackTable, voronoiDiagram); 
 
 		// Run spatial-temporal selection test
-/*		List<STBox> stTestCases = 
-				reader.readSpatialTemporalTestCases();
+		List<STBox> stTestCases = 
+				FileReader.readSpatialTemporalTestCases();
 		LOG.appendln("Spatial-Temporal Selection Result.");
 		LOG.appendln();
 		for(int i=1; i<=10; i++){ // run only 10 queries
@@ -85,22 +85,22 @@ public class BenchmarkTest implements Serializable, EnvironmentVariables{
 			LOG.appendln("Number of Points: " + count); 
 			LOG.appendln("Trajectories Returned: " + wholeResult.size());
 		}
-*/
+
 		// Run kNN test
 		List<Trajectory> nnTestCases = 
-				reader.readNearestNeighborTestCases();
+				FileReader.readNearestNeighborTestCases();
 		LOG.appendln("K-NN Result.");
 		LOG.appendln();
-		for(int i=1; i<=10; i++){ // run only 10 queries
+		int i = 1;
+		for(Trajectory q : nnTestCases){
 			// params
-			Trajectory q = nnTestCases.get(i);
-			long tIni = q.timeIni();
-			long tEnd = q.timeEnd();
-			final int k = 10; // 10-NN
+			long tIni 	= q.timeIni();
+			long tEnd 	= q.timeEnd();
+			final int k = 20; // 20-NN
 			// run query
 			List<NearNeighbor> resultList = queryService
 					.getKNearestNeighbors(q, tIni, tEnd, k);
-			LOG.appendln("Query " + i + " Result.");
+			LOG.appendln("Query " + i++ + " Result.");
 			LOG.appendln("Query Trajectory: " + q.id);
 			LOG.appendln("Trajectories Returned: " + resultList.size());
 			int n=1;
@@ -109,9 +109,9 @@ public class BenchmarkTest implements Serializable, EnvironmentVariables{
 				LOG.appendln("Dist: " + nn.distance);
 			}
 		}
-
+		
 		// save the result log to HDFS
-		LOG.save("experiments-benchmark-results");		
+		LOG.save("experiments-benchmark-results");
 		
 		// unpersist
 		voronoiPagesRDD.unpersist();

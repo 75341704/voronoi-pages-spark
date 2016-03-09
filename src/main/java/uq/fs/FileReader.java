@@ -125,7 +125,7 @@ public class FileReader implements Serializable, EnvironmentVariables{
 	 * @return Return a RDD of string lines.
 	 */
 	public static JavaRDD<String> readDataAsRDD(){
-		System.out.println("[FILE READER] Reading data..");
+		System.out.println("\n[FILE READER] Reading data..");
 		
 		// read raw data to Spark RDD
 		JavaRDD<String> fileRDD = 
@@ -141,7 +141,7 @@ public class FileReader implements Serializable, EnvironmentVariables{
 	 * @return Return a RDD of trajectories.
 	 */
 	public static JavaRDD<Trajectory> readDataAsTrajectoryRDD(){
-		System.out.println("[FILE READER] Reading data..");
+		System.out.println("\n[FILE READER] Reading data..");
 		
 		// read raw data to Spark RDD
 		JavaRDD<String> fileRDD = 
@@ -162,7 +162,7 @@ public class FileReader implements Serializable, EnvironmentVariables{
 	 * @return Return a RDD of points.
 	 */
 	public static JavaRDD<Point> readDataAsPointRDD(){
-		System.out.println("[FILE READER] Reading data..");
+		System.out.println("\n[FILE READER] Reading data..");
 		
 		// read raw data to Spark RDD
 		JavaRDD<String> fileRDD = 
